@@ -1,0 +1,194 @@
+:root {
+  --bg-main: #f4f4f5;
+  --ink: #1f1f24;
+  --muted: #5a5a63;
+  --brand-pink: #e57bb4;
+  --brand-gray: #b6b6bb;
+  --card: rgba(255, 255, 255, 0.86);
+  --shadow: 0 22px 42px rgba(37, 37, 43, 0.16);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: "Manrope", sans-serif;
+  color: var(--ink);
+  background:
+    radial-gradient(circle at 15% 18%, rgba(229, 123, 180, 0.22), transparent 40%),
+    radial-gradient(circle at 85% 72%, rgba(182, 182, 187, 0.28), transparent 42%),
+    var(--bg-main);
+  overflow-x: hidden;
+}
+
+.bg-orb {
+  position: fixed;
+  border-radius: 50%;
+  filter: blur(2px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.orb-a {
+  width: 170px;
+  height: 170px;
+  background: rgba(229, 123, 180, 0.2);
+  top: -40px;
+  right: -30px;
+}
+
+.orb-b {
+  width: 220px;
+  height: 220px;
+  background: rgba(182, 182, 187, 0.22);
+  left: -90px;
+  bottom: -90px;
+}
+
+.landing {
+  position: relative;
+  z-index: 1;
+  width: min(100%, 980px);
+  margin: 0 auto;
+  padding: 18px 16px 50px;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.brand-logo {
+  width: 58px;
+  height: 58px;
+  object-fit: contain;
+}
+
+.brand-kicker {
+  margin: 0;
+  font-family: "Sora", sans-serif;
+  font-weight: 800;
+  font-size: 1rem;
+}
+
+.brand-sub {
+  margin: 2px 0 0;
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
+.hero {
+  margin-top: 20px;
+  display: grid;
+  gap: 16px;
+}
+
+.hero-copy {
+  background: var(--card);
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  border-radius: 20px;
+  box-shadow: var(--shadow);
+  padding: 20px 18px;
+}
+
+h1 {
+  margin: 0;
+  font-family: "Sora", sans-serif;
+  font-size: clamp(2rem, 8vw, 3.2rem);
+  line-height: 1.02;
+}
+
+.hero-copy p {
+  margin: 12px 0 0;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.cta {
+  margin-top: 18px;
+  display: inline-block;
+  width: 100%;
+  text-align: center;
+  text-decoration: none;
+  font-family: "Sora", sans-serif;
+  font-weight: 700;
+  color: #ffffff;
+  background: linear-gradient(135deg, #e57bb4, #c35b98);
+  border-radius: 14px;
+  padding: 13px 16px;
+  box-shadow: 0 16px 28px rgba(195, 91, 152, 0.32);
+}
+
+.cta:hover {
+  background: linear-gradient(135deg, #d968a5, #b24b89);
+}
+
+.mascot-card {
+  margin: 0;
+  background: rgba(255, 255, 255, 0.92);
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  box-shadow: var(--shadow);
+  padding: 18px 16px;
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+}
+
+.mascot-card img {
+  width: min(100%, 280px);
+  aspect-ratio: 1;
+  object-fit: contain;
+}
+
+.mascot-card figcaption {
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.reveal {
+  opacity: 0;
+  transform: translateY(8px);
+  animation: reveal 0.48s ease forwards;
+}
+
+.delay-1 {
+  animation-delay: 0.09s;
+}
+
+@keyframes reveal {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (min-width: 760px) {
+  .landing {
+    padding: 28px 22px 70px;
+  }
+
+  .brand-logo {
+    width: 68px;
+    height: 68px;
+  }
+
+  .hero {
+    margin-top: 28px;
+    grid-template-columns: 1.1fr 0.9fr;
+    align-items: stretch;
+  }
+
+  .hero-copy {
+    padding: 30px 28px;
+  }
+
+  .cta {
+    width: auto;
+    min-width: 260px;
+  }
+}

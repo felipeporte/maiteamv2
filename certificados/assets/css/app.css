@@ -1,0 +1,286 @@
+:root {
+  --bg-cream: #f4f4f5;
+  --bg-wave: #f4f4f5;
+  --ink: #1f1f24;
+  --ink-soft: #5a5a63;
+  --brand: #e57bb4;
+  --brand-dark: #c35b98;
+  --teal: #b6b6bb;
+  --card: rgba(255, 255, 255, 0.86);
+  --shadow: 0 24px 40px rgba(37, 37, 43, 0.16);
+  --radius: 18px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: "Source Sans 3", sans-serif;
+  color: var(--ink);
+  background:
+    radial-gradient(circle at 15% 18%, rgba(229, 123, 180, 0.22), transparent 40%),
+    radial-gradient(circle at 85% 72%, rgba(182, 182, 187, 0.28), transparent 42%),
+    linear-gradient(170deg, var(--bg-cream), var(--bg-wave));
+  overflow-x: hidden;
+}
+
+.bg-shape {
+  position: fixed;
+  border-radius: 50%;
+  filter: blur(2px);
+  z-index: 0;
+  pointer-events: none;
+}
+
+.shape-a {
+  width: 180px;
+  height: 180px;
+  background: rgba(229, 123, 180, 0.2);
+  top: -45px;
+  right: -30px;
+}
+
+.shape-b {
+  width: 220px;
+  height: 220px;
+  background: rgba(182, 182, 187, 0.22);
+  left: -80px;
+  bottom: -60px;
+}
+
+.container {
+  position: relative;
+  z-index: 1;
+  width: min(100%, 860px);
+  margin: 0 auto;
+  padding: 18px 16px 44px;
+}
+
+.hero {
+  padding: 18px 2px 8px;
+}
+
+.eyebrow {
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  font-size: 0.72rem;
+  color: var(--ink-soft);
+  font-weight: 700;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-family: "Sora", sans-serif;
+  line-height: 1.12;
+}
+
+h1 {
+  margin: 8px 0 10px;
+  font-size: clamp(1.9rem, 7vw, 2.9rem);
+}
+
+.lead {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: 1.02rem;
+  max-width: 60ch;
+}
+
+.panel {
+  margin-top: 16px;
+  background: var(--card);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 18px 16px;
+}
+
+.panel h2 {
+  margin: 0 0 12px;
+  font-size: 1.3rem;
+}
+
+.search-form {
+  display: grid;
+  gap: 8px;
+}
+
+.search-form label {
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+.input-row {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+
+input[type="text"] {
+  width: 100%;
+  border: 1px solid rgba(90, 90, 99, 0.26);
+  border-radius: 12px;
+  padding: 12px 14px;
+  font: inherit;
+  color: var(--ink);
+  background: #fff;
+}
+
+button,
+.download {
+  border: none;
+  border-radius: 12px;
+  background: linear-gradient(135deg, var(--brand), var(--brand-dark));
+  color: #fff;
+  font-weight: 700;
+  font-family: "Sora", sans-serif;
+  padding: 12px 14px;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+  display: inline-block;
+}
+
+button:hover,
+.download:hover {
+  background: linear-gradient(135deg, #d968a5, #b24b89);
+}
+
+.download.main {
+  margin-top: 10px;
+  width: 100%;
+}
+
+.alert {
+  margin-top: 12px;
+  border-radius: 12px;
+  padding: 10px 12px;
+}
+
+.alert p {
+  margin: 4px 0;
+}
+
+.alert.error {
+  background: rgba(195, 91, 152, 0.16);
+  color: #7b2f5f;
+}
+
+.identity {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.identity p {
+  margin: 0;
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  border-bottom: 1px dashed rgba(31, 31, 36, 0.2);
+  padding-bottom: 6px;
+}
+
+.identity span {
+  color: var(--ink-soft);
+}
+
+.competencias-head {
+  margin-top: 18px;
+}
+
+.competencias-head h3 {
+  margin: 0;
+  font-size: 1.06rem;
+}
+
+.competencias-head p {
+  margin: 6px 0 0;
+  color: var(--ink-soft);
+}
+
+.competition-list {
+  margin-top: 12px;
+  display: grid;
+  gap: 10px;
+}
+
+.competition-item {
+  border-radius: 14px;
+  border: 1px solid rgba(182, 182, 187, 0.46);
+  background: rgba(255, 255, 255, 0.95);
+  padding: 12px;
+  display: grid;
+  gap: 10px;
+}
+
+.competition-item h4 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.competition-item p {
+  margin: 4px 0 0;
+  color: var(--ink-soft);
+}
+
+.place {
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.muted {
+  color: var(--ink-soft);
+}
+
+.reveal {
+  opacity: 0;
+  transform: translateY(8px);
+  animation: reveal 0.45s ease forwards;
+}
+
+.delay-1 {
+  animation-delay: 0.1s;
+}
+
+.delay-2 {
+  animation-delay: 0.18s;
+}
+
+@keyframes reveal {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (min-width: 760px) {
+  .container {
+    padding: 32px 22px 70px;
+  }
+
+  .panel {
+    padding: 24px;
+  }
+
+  .input-row {
+    grid-template-columns: 1fr auto;
+  }
+
+  button {
+    min-width: 140px;
+  }
+
+  .competition-item {
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    gap: 14px;
+  }
+}

@@ -1,0 +1,8 @@
+.git
+.env
+*.tar.gz
+*.sql
+gala/data
+gala/receipts
+interno/react-asistencia
+interno/assets/asistencia-app

@@ -1,0 +1,18 @@
+# Backups and database exports
+*.tar.gz
+*.sql
+*.sql.gz
+
+# Local and production secrets
+.env
+.env.*
+!.env.example
+
+# Generated frontend files and dependencies
+node_modules/
+interno/react-asistencia/
+interno/assets/asistencia-app/
+
+# Production data and uploaded files
+gala/data/
+gala/receipts/
