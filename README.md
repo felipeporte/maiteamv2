@@ -37,6 +37,24 @@ docker compose up -d --build
 
 El ultimo comando elimina los datos guardados en la base local. No afecta la instancia de produccion.
 
+## Produccion
+
+En la instancia AWS el proyecto se mantiene con Git y la configuracion sensible vive en un archivo `.env` en la raiz del sitio.
+
+Flujo de despliegue:
+
+```bash
+git pull --ff-only origin main
+```
+
+Si cambian tablas o columnas:
+
+```bash
+mysql -u <usuario> -p <base> < interno/migration/003_asistencia_clases.sql
+```
+
+El archivo `.env` no se versiona. Debe existir en cada servidor con las credenciales reales de la base de datos.
+
 ## Estructura
 
 - `index.php`: sitio publico.
