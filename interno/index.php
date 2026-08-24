@@ -466,6 +466,44 @@ if ($page === 'clases') {
 
 $page = $_GET['page'] ?? 'home';
 
+if ($page === 'asistencia') {
+    $flash = $_GET['flash'] ?? null;
+    $fecha = trim($_GET['fecha'] ?? date('Y-m-d'));
+
+    if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $fecha)) {
+        $fecha = date('Y-m-d');
+    }
+
+    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        $id = (int) ($_POST['id'] ?? 0);
+        $fecha = trim($_POST['fecha'] ?? $fecha);
+        $asistencia = trim($_POST['asistencia'] ?? 'pendiente');
+        $asistenciaNotas = trim($_POST['asistencia_notas'] ?? '');
+        $estadosPermitidos = array_keys(asistencia_estados());
+
+        if ($id > 0 && preg_match('/^\d{4}-\d{2}-\d{2}$/', $fecha) && in_array($asistencia, $estadosPermitidos, true)) {
+            asistencia_update($id, [
+                'asistencia' => $asistencia,
+                'asistencia_notas' => $asistenciaNotas,
+            ]);
+            redirect(base_url('/?page=asistencia&fecha=' . rawurlencode($fecha) . '&flash=updated'));
+        }
+
+        redirect(base_url('/?page=asistencia&fecha=' . rawurlencode($fecha) . '&flash=error'));
+    }
+
+    render('asistencia', [
+        'title' => page_title('asistencia'),
+        'page' => $page,
+        'flash' => $flash,
+        'fecha' => $fecha,
+        'asistencias' => asistencia_clases_por_fecha($fecha),
+        'resumen' => asistencia_resumen_por_fecha($fecha),
+        'estados' => asistencia_estados(),
+    ]);
+    exit;
+}
+
 if ($page === 'pagos') {
     $action = $_GET['action'] ?? 'list';
     $flash = $_GET['flash'] ?? null;

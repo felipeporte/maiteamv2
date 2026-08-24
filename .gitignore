@@ -2,6 +2,8 @@
 *.tar.gz
 *.sql
 *.sql.gz
+!interno/sql/schema.sql
+!interno/migration/*.sql
 
 # Local and production secrets
 .env
@@ -10,8 +12,6 @@
 
 # Generated frontend files and dependencies
 node_modules/
-interno/react-asistencia/
-interno/assets/asistencia-app/
 
 # Production data and uploaded files
 gala/data/

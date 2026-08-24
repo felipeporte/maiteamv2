@@ -71,6 +71,11 @@ $periodoSeleccionado = $kpi_periodo ?? ($kpi['periodo'] ?? date('Y-m'));
         <a href="<?= e(config('base_url')) ?>/?page=clases">Configurar</a>
     </article>
     <article class="card">
+        <h2>Asistencia</h2>
+        <p>Marca presencia, ausencias y justificativos por fecha.</p>
+        <a href="<?= e(config('base_url')) ?>/?page=asistencia">Configurar</a>
+    </article>
+    <article class="card">
         <h2>Modalidades</h2>
         <p>Configura modalidades y costos mensuales.</p>
         <a href="<?= e(config('base_url')) ?>/?page=modalidades">Configurar</a>

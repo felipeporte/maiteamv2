@@ -7,6 +7,7 @@ require __DIR__ . '/apoderados.php';
 require __DIR__ . '/deportistas.php';
 require __DIR__ . '/coaches.php';
 require __DIR__ . '/clases.php';
+require __DIR__ . '/asistencia.php';
 require __DIR__ . '/pagos.php';
 require __DIR__ . '/transferencias.php';
 require __DIR__ . '/modalidades.php';

@@ -10,6 +10,7 @@ $navItems = [
     'deportistas' => 'Deportistas',
     'coaches' => 'Coaches',
     'clases' => 'Clases',
+    'asistencia' => 'Asistencia',
     'modalidades' => 'Modalidades',
     'inscripciones' => 'Inscripciones',
     'competencias' => 'Competencias',

@@ -164,6 +164,7 @@ function page_title(string $view): string
         'deportistas' => 'Deportistas - Club MaiTeam',
         'coaches' => 'Coaches - Club MaiTeam',
         'clases' => 'Clases - Club MaiTeam',
+        'asistencia' => 'Asistencia - Club MaiTeam',
         'modalidades' => 'Modalidades - Club MaiTeam',
         'inscripciones' => 'Inscripciones - Club MaiTeam',
         'competencias' => 'Competencias - Club MaiTeam',
