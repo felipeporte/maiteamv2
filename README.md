@@ -47,10 +47,22 @@ Flujo de despliegue:
 git pull --ff-only origin main
 ```
 
+O, desde la raiz del proyecto:
+
+```bash
+./deploy.sh
+```
+
 Si cambian tablas o columnas:
 
 ```bash
 mysql -u <usuario> -p <base> < interno/migration/003_asistencia_clases.sql
+```
+
+O bien:
+
+```bash
+./deploy.sh --migrate interno/migration/003_asistencia_clases.sql
 ```
 
 El archivo `.env` no se versiona. Debe existir en cada servidor con las credenciales reales de la base de datos.
