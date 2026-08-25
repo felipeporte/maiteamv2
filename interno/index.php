@@ -111,9 +111,151 @@ $page = $_GET['page'] ?? 'home';
 if ($page === 'deportistas') {
     $action = $_GET['action'] ?? 'list';
     $flash = $_GET['flash'] ?? null;
+    $modalidadesCompetencia = modalidades_competencia_all();
+    $modalidadesCompetenciaMap = [];
+    $modalidadNoCompiteId = 0;
+
+    foreach ($modalidadesCompetencia as $modalidadCompetencia) {
+        $modalidadId = (int) $modalidadCompetencia['id'];
+        $modalidadesCompetenciaMap[$modalidadId] = $modalidadCompetencia;
+        if (($modalidadCompetencia['codigo'] ?? '') === 'no_compite') {
+            $modalidadNoCompiteId = $modalidadId;
+        }
+    }
+
+    if ($action === 'competencia-options') {
+        header('Content-Type: application/json; charset=utf-8');
+        header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+
+        if (!modalidades_competencia_schema_ready()) {
+            http_response_code(503);
+            echo json_encode([
+                'ok' => false,
+                'message' => 'La base de datos aun no tiene la migracion de competencia.',
+            ], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+
+        $kind = trim((string) ($_GET['kind'] ?? ''));
+        $modalidadId = (int) ($_GET['modalidad_id'] ?? 0);
+        $nivel = trim((string) ($_GET['nivel'] ?? ''));
+        $subnivel = trim((string) ($_GET['subnivel'] ?? ''));
+        $fechaNacimiento = trim((string) ($_GET['fecha_nacimiento'] ?? ''));
+        $edadCompetencia = modalidades_competencia_edad_competencia($fechaNacimiento);
+        $modalidad = $modalidadId > 0 ? ($modalidadesCompetenciaMap[$modalidadId] ?? null) : null;
+
+        if ($modalidad === null) {
+            http_response_code(400);
+            echo json_encode([
+                'ok' => false,
+                'message' => 'Modalidad no valida.',
+            ], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+
+        if ($kind === 'levels') {
+            $items = [];
+            if (($modalidad['codigo'] ?? '') !== 'no_compite') {
+                foreach (modalidades_competencia_niveles_por_modalidad($modalidadId) as $row) {
+                    $items[] = [
+                        'value' => (string) $row['nivel'],
+                        'label' => (string) $row['nivel'],
+                    ];
+                }
+            }
+
+            echo json_encode([
+                'ok' => true,
+                'items' => $items,
+            ], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+
+        if ($kind === 'subniveles') {
+            $items = [];
+            if ($nivel !== '' && ($modalidad['codigo'] ?? '') !== 'no_compite') {
+                foreach (modalidades_competencia_subniveles_por_modalidad_y_nivel($modalidadId, $nivel) as $row) {
+                    $items[] = [
+                        'value' => (string) $row['subnivel'],
+                        'label' => (string) $row['subnivel'],
+                    ];
+                }
+            }
+
+            echo json_encode([
+                'ok' => true,
+                'items' => $items,
+            ], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+
+        if ($kind === 'preview') {
+            $rule = null;
+            if (($modalidad['codigo'] ?? '') !== 'no_compite'
+                && $edadCompetencia !== null
+                && $nivel !== ''
+                && $subnivel !== ''
+            ) {
+                $rule = modalidades_competencia_regla_por_seleccion($modalidadId, $nivel, $subnivel, $edadCompetencia);
+            }
+
+            echo json_encode([
+                'ok' => true,
+                'edad_competencia' => $edadCompetencia,
+                'categoria' => $rule['categoria'] ?? (($modalidad['codigo'] ?? '') === 'no_compite' ? 'No compite' : null),
+                'rule' => $rule,
+            ], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+
+        http_response_code(400);
+        echo json_encode([
+            'ok' => false,
+            'message' => 'Parametro kind no valido.',
+        ], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+
+    $buildSugerencias = static function (array $deportista): array {
+        return modalidades_competencia_sugerencias_para_deportista(
+            (string) ($deportista['fecha_nacimiento'] ?? ''),
+            []
+        );
+    };
+    $competenciaSchemaReady = modalidades_competencia_schema_ready();
+    $blankCompetenciaAssignment = [
+        'modalidad_competencia_id' => 0,
+        'nivel' => '',
+        'subnivel' => '',
+        'categoria' => '',
+    ];
 
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $submittedId = (int) ($_POST['id'] ?? 0);
+        $rawAssignments = (array) ($_POST['competencia_assignments'] ?? []);
+        $competenciaAssignments = [];
+        foreach ($rawAssignments as $assignment) {
+            if (!is_array($assignment)) {
+                continue;
+            }
+
+            $normalized = [
+                'modalidad_competencia_id' => (int) ($assignment['modalidad_competencia_id'] ?? 0),
+                'nivel' => trim((string) ($assignment['nivel'] ?? '')),
+                'subnivel' => trim((string) ($assignment['subnivel'] ?? '')),
+                'categoria' => trim((string) ($assignment['categoria'] ?? '')),
+            ];
+
+            if ($normalized['modalidad_competencia_id'] <= 0
+                && $normalized['nivel'] === ''
+                && $normalized['subnivel'] === ''
+                && $normalized['categoria'] === ''
+            ) {
+                continue;
+            }
+
+            $competenciaAssignments[] = $normalized;
+        }
         $form = [
             'apoderado_id' => (int) ($_POST['apoderado_id'] ?? 0),
             'nombre' => trim($_POST['nombre'] ?? ''),
@@ -149,20 +291,114 @@ if ($page === 'deportistas') {
         if ($form['nivel_id'] <= 0) {
             $errors[] = 'Debes seleccionar un nivel.';
         }
+        if (empty($competenciaAssignments)) {
+            $errors[] = 'Debes agregar al menos una modalidad de competencia.';
+        }
 
-        if (empty($errors)) {
-            if ($action === 'create') {
-                deportista_create($form);
-                redirect(base_url('/?page=deportistas&flash=created'));
+        $competenciaAssignmentsForForm = [];
+        $seenModalidades = [];
+        $edadCompetencia = modalidades_competencia_edad_competencia($form['fecha_nacimiento']);
+
+        foreach ($competenciaAssignments as $assignment) {
+            $modalidadId = (int) $assignment['modalidad_competencia_id'];
+            $modalidad = $modalidadesCompetenciaMap[$modalidadId] ?? null;
+            if ($modalidad === null) {
+                $errors[] = 'Una de las modalidades de competencia no es valida.';
+                continue;
             }
 
-            if ($action === 'edit') {
-                $id = (int) ($_POST['id'] ?? 0);
-                if ($id > 0) {
-                    deportista_update($id, $form);
-                    redirect(base_url('/?page=deportistas&flash=updated'));
+            if (isset($seenModalidades[$modalidadId])) {
+                $errors[] = 'No puedes repetir la misma modalidad de competencia.';
+                continue;
+            }
+            $seenModalidades[$modalidadId] = true;
+
+            $codigoModalidad = (string) ($modalidad['codigo'] ?? '');
+            if ($codigoModalidad === 'no_compite') {
+                if (count($competenciaAssignments) > 1) {
+                    $errors[] = 'La modalidad "No compite" debe quedar sola.';
                 }
-                $errors[] = 'No se encontro el deportista.';
+                if ($assignment['nivel'] !== '' || $assignment['subnivel'] !== '') {
+                    $errors[] = 'La modalidad "No compite" no usa nivel ni subnivel.';
+                }
+
+                $competenciaAssignmentsForForm[] = [
+                    'modalidad_competencia_id' => $modalidadId,
+                    'nivel' => '',
+                    'subnivel' => '',
+                    'categoria' => 'No compite',
+                ];
+                continue;
+            }
+
+            if ($assignment['nivel'] === '') {
+                $errors[] = 'Debes seleccionar un nivel para la modalidad ' . ($modalidad['nombre'] ?? 'seleccionada') . '.';
+                continue;
+            }
+            if ($assignment['subnivel'] === '') {
+                $errors[] = 'Debes seleccionar un subnivel para la modalidad ' . ($modalidad['nombre'] ?? 'seleccionada') . '.';
+                continue;
+            }
+            if ($edadCompetencia === null) {
+                $errors[] = 'Debes ingresar la fecha de nacimiento para calcular la edad de competencia.';
+                continue;
+            }
+
+            $rule = modalidades_competencia_regla_por_seleccion(
+                $modalidadId,
+                $assignment['nivel'],
+                $assignment['subnivel'],
+                $edadCompetencia
+            );
+
+            if ($rule === null) {
+                $errors[] = 'La seleccion no tiene una categoria valida para la edad de competencia.';
+                continue;
+            }
+
+            $competenciaAssignmentsForForm[] = [
+                'modalidad_competencia_id' => $modalidadId,
+                'nivel' => $assignment['nivel'],
+                'subnivel' => $assignment['subnivel'],
+                'categoria' => (string) ($rule['categoria'] ?? ''),
+            ];
+        }
+
+        if (isset($seenModalidades[$modalidadNoCompiteId]) && count($competenciaAssignmentsForForm) > 1) {
+            $errors[] = 'La modalidad "No compite" debe quedar sola.';
+        }
+
+        if (empty($errors)) {
+            $pdo = db();
+            $pdo->beginTransaction();
+
+            try {
+                if ($action === 'create') {
+                    $deportistaId = deportista_create($form);
+                    deportista_modalidades_competencia_sync($deportistaId, $competenciaAssignmentsForForm);
+                    $pdo->commit();
+                    redirect(base_url('/?page=deportistas&flash=created'));
+                }
+
+                if ($action === 'edit') {
+                    $id = (int) ($_POST['id'] ?? 0);
+                    if ($id > 0) {
+                        deportista_update($id, $form);
+                        deportista_modalidades_competencia_sync($id, $competenciaAssignmentsForForm);
+                        $pdo->commit();
+                        redirect(base_url('/?page=deportistas&flash=updated'));
+                    }
+                    $errors[] = 'No se encontro el deportista.';
+                }
+            } catch (Throwable $e) {
+                if ($pdo->inTransaction()) {
+                    $pdo->rollBack();
+                }
+                $errors[] = 'No se pudo guardar el deportista.';
+            }
+
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
             }
         }
 
@@ -174,6 +410,12 @@ if ($page === 'deportistas') {
             'errors' => $errors,
             'apoderados' => apoderados_all(),
             'niveles' => niveles_all(),
+            'modalidades_competencia' => $modalidadesCompetencia,
+            'sugerencias_competencia' => $buildSugerencias(['fecha_nacimiento' => $form['fecha_nacimiento']]),
+            'competencia_schema_ready' => $competenciaSchemaReady,
+            'competencia_assignments' => !empty($competenciaAssignmentsForForm)
+                ? $competenciaAssignmentsForForm
+                : ($competenciaAssignments ?: [$blankCompetenciaAssignment]),
             'deportista' => array_merge(['id' => $submittedId], $form),
         ]);
         exit;
@@ -188,6 +430,10 @@ if ($page === 'deportistas') {
             'errors' => [],
             'apoderados' => apoderados_all(),
             'niveles' => niveles_all(),
+            'modalidades_competencia' => $modalidadesCompetencia,
+            'sugerencias_competencia' => $buildSugerencias(['fecha_nacimiento' => '']),
+            'competencia_schema_ready' => $competenciaSchemaReady,
+            'competencia_assignments' => [$blankCompetenciaAssignment],
             'deportista' => [
                 'id' => 0,
                 'apoderado_id' => 0,
@@ -214,6 +460,7 @@ if ($page === 'deportistas') {
         }
 
         $view = 'deportistas/form';
+        $competenciaAssignments = deportista_modalidades_competencia_all($id);
         render($view, [
             'title' => 'Editar deportista - Club MaiTeam',
             'page' => $page,
@@ -221,6 +468,10 @@ if ($page === 'deportistas') {
             'errors' => [],
             'apoderados' => apoderados_all(),
             'niveles' => niveles_all(),
+            'modalidades_competencia' => $modalidadesCompetencia,
+            'sugerencias_competencia' => $buildSugerencias($deportista),
+            'competencia_schema_ready' => $competenciaSchemaReady,
+            'competencia_assignments' => !empty($competenciaAssignments) ? $competenciaAssignments : [$blankCompetenciaAssignment],
             'deportista' => $deportista,
         ]);
         exit;

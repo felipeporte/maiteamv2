@@ -12,6 +12,7 @@ require __DIR__ . '/asistencia.php';
 require __DIR__ . '/pagos.php';
 require __DIR__ . '/transferencias.php';
 require __DIR__ . '/modalidades.php';
+require __DIR__ . '/modalidades_competencia.php';
 require __DIR__ . '/inscripciones.php';
 require __DIR__ . '/cuotas.php';
 require __DIR__ . '/reportes.php';

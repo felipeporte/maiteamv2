@@ -24,9 +24,10 @@
             <thead>
                 <tr>
                     <th>Nombre</th>
-                    <th>RUT</th>
                     <th>Apoderado</th>
                     <th>Nivel</th>
+                    <th>Edad competencia</th>
+                    <th>Modalidades</th>
                     <th>Categoria</th>
                     <th>Activo</th>
                     <th></th>
@@ -35,15 +36,22 @@
             <tbody>
                 <?php if (empty($deportistas)): ?>
                     <tr>
-                        <td colspan="7">Aun no hay deportistas registrados.</td>
+                        <td colspan="8">Aun no hay deportistas registrados.</td>
                     </tr>
                 <?php else: ?>
                     <?php foreach ($deportistas as $deportista): ?>
                         <tr>
                             <td><?= e($deportista['nombre']) ?></td>
-                            <td><?= e(format_rut($deportista['rut'] ?? '')) ?></td>
                             <td><?= e($deportista['apoderado_nombre']) ?></td>
                             <td><?= e($deportista['nivel_nombre'] ?? '') ?></td>
+                            <td>
+                                <?php if ($deportista['edad_competencia'] !== null): ?>
+                                    <span class="chip"><?= e((string) $deportista['edad_competencia']) ?> años</span>
+                                <?php else: ?>
+                                    <span class="chip muted">Sin dato</span>
+                                <?php endif; ?>
+                            </td>
+                            <td><?= e($deportista['modalidades_competencia'] ?: 'Sin asignar') ?></td>
                             <td><?= e($deportista['categoria']) ?></td>
                             <td><?= $deportista['activo'] ? 'Si' : 'No' ?></td>
                             <td class="actions">

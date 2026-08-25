@@ -5,11 +5,23 @@ declare(strict_types=1);
 function deportistas_all(): array
 {
     $stmt = db()->query(
-        'SELECT d.id, d.nombre, d.fecha_nacimiento, d.categoria, d.rut, d.nivel_id, d.activo, '
-        . 'a.nombre AS apoderado_nombre, n.nombre AS nivel_nombre '
+        'SELECT d.id, d.nombre, d.fecha_nacimiento, d.categoria, d.nivel_id, d.activo, '
+        . 'CASE '
+        . '    WHEN d.fecha_nacimiento IS NULL THEN NULL '
+        . '    ELSE YEAR(CURDATE()) - YEAR(d.fecha_nacimiento) '
+        . 'END AS edad_competencia, '
+        . 'a.nombre AS apoderado_nombre, n.nombre AS nivel_nombre, '
+        . 'COALESCE(dm.modalidades_competencia, "") AS modalidades_competencia '
         . 'FROM deportistas d '
         . 'INNER JOIN apoderados a ON a.id = d.apoderado_id '
         . 'LEFT JOIN niveles_deportivos n ON n.id = d.nivel_id '
+        . 'LEFT JOIN ('
+        . '    SELECT dmc.deportista_id, '
+        . '           GROUP_CONCAT(mc.nombre ORDER BY mc.orden ASC, mc.nombre ASC SEPARATOR ", ") AS modalidades_competencia '
+        . '    FROM deportista_modalidades_competencia dmc '
+        . '    INNER JOIN modalidades_competencia mc ON mc.id = dmc.modalidad_competencia_id '
+        . '    GROUP BY dmc.deportista_id'
+        . ') dm ON dm.deportista_id = d.id '
         . 'ORDER BY d.nombre'
     );
     return $stmt->fetchAll();
@@ -24,7 +36,13 @@ function deportista_find(int $id): ?array
     $stmt->execute(['id' => $id]);
     $row = $stmt->fetch();
 
-    return $row ?: null;
+    if ($row === false) {
+        return null;
+    }
+
+    $row['modalidades_competencia_ids'] = deportista_modalidades_competencia_ids($id);
+
+    return $row;
 }
 
 function deportista_create(array $data): int
