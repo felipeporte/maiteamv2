@@ -11,6 +11,31 @@
 
 $isEdit = $action === 'edit';
 $competenciaAssignments = $competencia_assignments ?? [];
+$deportistaNombre = trim((string) ($deportista['nombre'] ?? ''));
+$deportistaAvatarUrl = deportista_avatar_public_url($deportista['avatar_path'] ?? null);
+$deportistaAvatarInitials = (static function (string $name): string {
+    $parts = preg_split('/\s+/u', trim($name), -1, PREG_SPLIT_NO_EMPTY);
+    if (empty($parts)) {
+        return 'D';
+    }
+
+    $firstPart = $parts[0] ?? '';
+    $lastPart = $parts[count($parts) - 1] ?? '';
+    $getInitial = static function (string $value): string {
+        if ($value === '') {
+            return '';
+        }
+
+        if (function_exists('mb_substr')) {
+            return mb_strtoupper(mb_substr($value, 0, 1));
+        }
+
+        return strtoupper(substr($value, 0, 1));
+    };
+
+    $initials = $getInitial($firstPart) . $getInitial($lastPart);
+    return $initials !== '' ? $initials : 'D';
+})($deportistaNombre);
 $modalidadesById = [];
 $modalidadNoCompiteId = 0;
 foreach ($modalidades_competencia as $modalidad) {
@@ -61,7 +86,7 @@ $competenciaAssignmentsSummary = array_values(array_filter(
         </div>
     <?php endif; ?>
     <div class="container">
-    <form id="deportista-form" class="ficha-form" method="post" action="<?= e(base_url('/?page=deportistas&action=' . $action)) ?>">
+    <form id="deportista-form" class="ficha-form" method="post" enctype="multipart/form-data" action="<?= e(base_url('/?page=deportistas&action=' . $action)) ?>">
         <?php if ($isEdit): ?>
             <input type="hidden" name="id" value="<?= e((string) $deportista['id']) ?>">
         <?php endif; ?>
@@ -75,33 +100,57 @@ $competenciaAssignmentsSummary = array_values(array_filter(
                             <p class="hint">Datos base del deportista.</p>
                         </div>
                     </div>
-                    <div class="ficha-grid ficha-grid-2">
-                        <label>
-                            Apoderado
-                            <select name="apoderado_id" required>
-                                <option value="">Selecciona un apoderado</option>
-                                <?php foreach ($apoderados as $apoderado): ?>
-                                    <option value="<?= e((string) $apoderado['id']) ?>" <?= (int) $deportista['apoderado_id'] === (int) $apoderado['id'] ? 'selected' : '' ?>>
-                                        <?= e($apoderado['nombre']) ?>
-                                    </option>
-                                <?php endforeach; ?>
-                            </select>
-                        </label>
+                    <div class="ficha-personal-layout">
+                        <div class="ficha-avatar-panel">
+                            <div
+                                class="deportista-avatar deportista-avatar--large"
+                                data-avatar-preview
+                                data-avatar-current-src="<?= e($deportistaAvatarUrl ?? '') ?>"
+                                data-avatar-initials="<?= e($deportistaAvatarInitials) ?>"
+                            >
+                                <?php if ($deportistaAvatarUrl): ?>
+                                    <img src="<?= e($deportistaAvatarUrl) ?>" alt="Avatar del deportista">
+                                <?php else: ?>
+                                    <span data-avatar-fallback><?= e($deportistaAvatarInitials) ?></span>
+                                <?php endif; ?>
+                            </div>
+                            <div class="ficha-avatar-copy">
+                                <label>
+                                    Imagen del deportista
+                                    <input type="file" name="avatar" accept="image/png,image/jpeg,image/webp,image/gif">
+                                </label>
+                                <span class="hint">PNG, JPG, WEBP o GIF. Recomendado cuadrada para que el avatar se vea mejor.</span>
+                            </div>
+                        </div>
 
-                        <label>
-                            Nombre
-                            <input type="text" name="nombre" required value="<?= e($deportista['nombre'] ?? '') ?>">
-                        </label>
+                        <div class="ficha-grid ficha-grid-2">
+                            <label>
+                                Apoderado
+                                <select name="apoderado_id" required>
+                                    <option value="">Selecciona un apoderado</option>
+                                    <?php foreach ($apoderados as $apoderado): ?>
+                                        <option value="<?= e((string) $apoderado['id']) ?>" <?= (int) $deportista['apoderado_id'] === (int) $apoderado['id'] ? 'selected' : '' ?>>
+                                            <?= e($apoderado['nombre']) ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </label>
 
-                        <label>
-                            RUT
-                            <input type="text" name="rut" required value="<?= e(format_rut($deportista['rut'] ?? '')) ?>" placeholder="12345678-9">
-                        </label>
+                            <label>
+                                Nombre
+                                <input type="text" name="nombre" required value="<?= e($deportista['nombre'] ?? '') ?>">
+                            </label>
 
-                        <label>
-                            Fecha de nacimiento
-                            <input type="date" name="fecha_nacimiento" value="<?= e($deportista['fecha_nacimiento'] ?? '') ?>">
-                        </label>
+                            <label>
+                                RUT
+                                <input type="text" name="rut" required value="<?= e(format_rut($deportista['rut'] ?? '')) ?>" placeholder="12345678-9">
+                            </label>
+
+                            <label>
+                                Fecha de nacimiento
+                                <input type="date" name="fecha_nacimiento" value="<?= e($deportista['fecha_nacimiento'] ?? '') ?>">
+                            </label>
+                        </div>
                     </div>
                 </section>
 
@@ -368,6 +417,11 @@ $competenciaAssignmentsSummary = array_values(array_filter(
     const optionsUrl = builder.dataset.optionsUrl || '';
     const modalidadNoCompiteId = Number(builder.dataset.modalidadNoCompiteId || '0');
     const fechaNacimientoInput = document.querySelector('input[name="fecha_nacimiento"]');
+    const avatarInput = document.querySelector('input[name="avatar"]');
+    const avatarPreview = document.querySelector('[data-avatar-preview]');
+    const avatarCurrentSrc = avatarPreview?.dataset?.avatarCurrentSrc || '';
+    const avatarInitials = avatarPreview?.dataset?.avatarInitials || 'D';
+    let avatarObjectUrl = null;
 
     let nextIndex = Array.from(assignmentsWrap.querySelectorAll('[data-competencia-row]')).reduce((max, row) => {
         const rowIndex = Number(row.dataset.index || '0');
@@ -468,6 +522,51 @@ $competenciaAssignmentsSummary = array_values(array_filter(
 
     function currentFechaNacimiento() {
         return fechaNacimientoInput ? fechaNacimientoInput.value : '';
+    }
+
+    function renderAvatarPreviewFromState() {
+        if (!avatarPreview) {
+            return;
+        }
+
+        avatarPreview.innerHTML = '';
+
+        if (avatarCurrentSrc) {
+            const image = document.createElement('img');
+            image.src = avatarCurrentSrc;
+            image.alt = 'Avatar del deportista';
+            avatarPreview.appendChild(image);
+            return;
+        }
+
+        const fallback = document.createElement('span');
+        fallback.setAttribute('data-avatar-fallback', 'true');
+        fallback.textContent = avatarInitials;
+        avatarPreview.appendChild(fallback);
+    }
+
+    function renderAvatarFromFile(file) {
+        if (!avatarPreview) {
+            return;
+        }
+
+        if (avatarObjectUrl) {
+            URL.revokeObjectURL(avatarObjectUrl);
+            avatarObjectUrl = null;
+        }
+
+        avatarPreview.innerHTML = '';
+
+        if (!file) {
+            renderAvatarPreviewFromState();
+            return;
+        }
+
+        avatarObjectUrl = URL.createObjectURL(file);
+        const image = document.createElement('img');
+        image.src = avatarObjectUrl;
+        image.alt = 'Avatar seleccionado';
+        avatarPreview.appendChild(image);
     }
 
     async function updatePreview(row) {
@@ -688,6 +787,14 @@ $competenciaAssignmentsSummary = array_values(array_filter(
             });
         });
     }
+
+    if (avatarInput) {
+        avatarInput.addEventListener('change', () => {
+            renderAvatarFromFile(avatarInput.files ? avatarInput.files[0] : null);
+        });
+    }
+
+    renderAvatarPreviewFromState();
 
     assignmentsWrap.querySelectorAll('[data-competencia-row]').forEach((row) => {
         const fields = rowFields(row);

@@ -232,6 +232,8 @@ if ($page === 'deportistas') {
 
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $submittedId = (int) ($_POST['id'] ?? 0);
+        $currentDeportista = $submittedId > 0 ? deportista_find($submittedId) : null;
+        $currentAvatarPath = $currentDeportista['avatar_path'] ?? null;
         $rawAssignments = (array) ($_POST['competencia_assignments'] ?? []);
         $competenciaAssignments = [];
         foreach ($rawAssignments as $assignment) {
@@ -263,6 +265,7 @@ if ($page === 'deportistas') {
             'nivel_id' => (int) ($_POST['nivel_id'] ?? 0),
             'fecha_nacimiento' => trim($_POST['fecha_nacimiento'] ?? ''),
             'categoria' => trim($_POST['categoria'] ?? ''),
+            'avatar_path' => $currentAvatarPath,
             'activo' => isset($_POST['activo']) ? 1 : 0,
         ];
 
@@ -324,6 +327,7 @@ if ($page === 'deportistas') {
 
                 $competenciaAssignmentsForForm[] = [
                     'modalidad_competencia_id' => $modalidadId,
+                    'modalidad_nombre' => (string) ($modalidad['nombre'] ?? ''),
                     'nivel' => '',
                     'subnivel' => '',
                     'categoria' => 'No compite',
@@ -358,6 +362,7 @@ if ($page === 'deportistas') {
 
             $competenciaAssignmentsForForm[] = [
                 'modalidad_competencia_id' => $modalidadId,
+                'modalidad_nombre' => (string) ($modalidad['nombre'] ?? ''),
                 'nivel' => $assignment['nivel'],
                 'subnivel' => $assignment['subnivel'],
                 'categoria' => (string) ($rule['categoria'] ?? ''),
@@ -371,30 +376,67 @@ if ($page === 'deportistas') {
         if (empty($errors)) {
             $pdo = db();
             $pdo->beginTransaction();
+            $uploadedAvatarPath = null;
+            $avatarPathToDelete = null;
 
             try {
                 if ($action === 'create') {
                     $deportistaId = deportista_create($form);
-                    deportista_modalidades_competencia_sync($deportistaId, $competenciaAssignmentsForForm);
-                    $pdo->commit();
-                    redirect(base_url('/?page=deportistas&flash=created'));
-                }
-
-                if ($action === 'edit') {
+                    $currentAvatarPath = null;
+                } elseif ($action === 'edit') {
                     $id = (int) ($_POST['id'] ?? 0);
                     if ($id > 0) {
                         deportista_update($id, $form);
-                        deportista_modalidades_competencia_sync($id, $competenciaAssignmentsForForm);
-                        $pdo->commit();
-                        redirect(base_url('/?page=deportistas&flash=updated'));
+                        $deportistaId = $id;
+                    } else {
+                        $errors[] = 'No se encontro el deportista.';
+                        throw new RuntimeException('No se encontro el deportista.');
                     }
-                    $errors[] = 'No se encontro el deportista.';
+                } else {
+                    throw new RuntimeException('Accion no valida.');
                 }
+
+                $avatarUpload = $_FILES['avatar'] ?? null;
+                if (is_array($avatarUpload) && (($avatarUpload['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE)) {
+                    $avatarPathToDelete = $currentAvatarPath;
+                    $uploadedAvatarPath = deportista_avatar_store_upload((int) $deportistaId, $avatarUpload);
+                    deportista_update_avatar_path((int) $deportistaId, $uploadedAvatarPath);
+                    $form['avatar_path'] = $uploadedAvatarPath;
+                }
+
+                deportista_modalidades_competencia_sync((int) $deportistaId, $competenciaAssignmentsForForm);
+                $pdo->commit();
+
+                if ($avatarPathToDelete !== null) {
+                    $avatarPathToDelete = trim($avatarPathToDelete);
+                    $newAvatarPath = $uploadedAvatarPath !== null ? trim($uploadedAvatarPath) : '';
+                    if ($avatarPathToDelete !== '' && $avatarPathToDelete !== $newAvatarPath) {
+                        $avatarAbsolutePath = deportista_avatar_absolute_path($avatarPathToDelete);
+                        if (is_file($avatarAbsolutePath)) {
+                            @unlink($avatarAbsolutePath);
+                        }
+                    }
+                }
+
+                redirect(base_url('/?page=deportistas&flash=' . ($action === 'create' ? 'created' : 'updated')));
             } catch (Throwable $e) {
                 if ($pdo->inTransaction()) {
                     $pdo->rollBack();
                 }
-                $errors[] = 'No se pudo guardar el deportista.';
+                if ($uploadedAvatarPath !== null) {
+                    $avatarAbsolutePath = deportista_avatar_absolute_path($uploadedAvatarPath);
+                    if (is_file($avatarAbsolutePath)) {
+                        @unlink($avatarAbsolutePath);
+                    }
+                }
+                $addedSpecificError = false;
+                if ($e instanceof RuntimeException && $e->getMessage() !== '') {
+                    $errors[] = $e->getMessage();
+                    $addedSpecificError = true;
+                }
+                if (!$addedSpecificError) {
+                    $errors[] = 'No se pudo guardar el deportista.';
+                }
             }
 
             if ($pdo->inTransaction()) {
@@ -439,6 +481,7 @@ if ($page === 'deportistas') {
                 'apoderado_id' => 0,
                 'nombre' => '',
                 'rut' => '',
+                'avatar_path' => null,
                 'nivel_id' => 0,
                 'fecha_nacimiento' => '',
                 'categoria' => '',

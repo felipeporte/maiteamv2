@@ -418,6 +418,8 @@ select, input, textarea {
 }
 
 .deportista-avatar {
+  --avatar-start: #1f5fe0;
+  --avatar-end: #153a8a;
   width: 84px;
   height: 84px;
   border-radius: 999px;
@@ -433,6 +435,13 @@ select, input, textarea {
   overflow: hidden;
 }
 
+.deportista-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
 .deportista-avatar::after {
   content: "";
   position: absolute;
@@ -444,6 +453,43 @@ select, input, textarea {
 .deportista-avatar span {
   position: relative;
   z-index: 1;
+}
+
+.deportista-avatar--large {
+  width: 132px;
+  height: 132px;
+}
+
+.ficha-personal-layout {
+  display: grid;
+  grid-template-columns: minmax(240px, 280px) minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+
+.ficha-avatar-panel {
+  display: grid;
+  gap: 16px;
+  justify-items: start;
+  align-content: start;
+  padding: 18px;
+  border-radius: 20px;
+  background: rgba(244, 244, 245, 0.82);
+  border: 1px solid rgba(100, 100, 100, 0.12);
+}
+
+.ficha-avatar-copy {
+  display: grid;
+  gap: 10px;
+  width: 100%;
+}
+
+.ficha-avatar-copy input[type="file"] {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px dashed rgba(100, 100, 100, 0.35);
+  background: #ffffff;
 }
 
 .deportista-card-body {
@@ -907,6 +953,14 @@ tbody td {
 @media (max-width: 720px) {
   .competencia-row-grid {
     grid-template-columns: 1fr;
+  }
+
+  .ficha-personal-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .ficha-avatar-panel {
+    justify-items: center;
   }
 
   .ficha-header-actions {

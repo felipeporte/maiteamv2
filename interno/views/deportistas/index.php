@@ -62,6 +62,7 @@ $avatarInitials = static function (string $name): string {
                 <?php
                 $displayName = trim((string) ($deportista['nombre'] ?? ''));
                 $rut = trim((string) ($deportista['rut'] ?? ''));
+                $avatarUrl = deportista_avatar_public_url($deportista['avatar_path'] ?? null);
                 $initials = $avatarInitials($displayName);
                 $palette = $avatarPalettes[((int) $deportista['id']) % count($avatarPalettes)];
                 $avatarStyle = sprintf(
@@ -73,7 +74,11 @@ $avatarInitials = static function (string $name): string {
                 <article class="deportista-card">
                     <div class="deportista-card-media">
                         <div class="deportista-avatar" style="<?= e($avatarStyle) ?>">
-                            <span><?= e($initials) ?></span>
+                            <?php if ($avatarUrl): ?>
+                                <img src="<?= e($avatarUrl) ?>" alt="Avatar de <?= e($displayName !== '' ? $displayName : 'deportista') ?>">
+                            <?php else: ?>
+                                <span><?= e($initials) ?></span>
+                            <?php endif; ?>
                         </div>
                         <?php if ($deportista['edad_competencia'] !== null): ?>
                             <span class="chip"><?= e((string) $deportista['edad_competencia']) ?> años</span>

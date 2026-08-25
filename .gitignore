@@ -17,3 +17,5 @@ node_modules/
 # Production data and uploaded files
 gala/data/
 gala/receipts/
+interno/uploads/deportistas/*
+!interno/uploads/deportistas/.gitkeep
