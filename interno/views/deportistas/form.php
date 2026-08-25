@@ -31,8 +31,7 @@ $competenciaAssignmentsSummary = array_values(array_filter(
     static fn (array $assignment): bool => (int) ($assignment['modalidad_competencia_id'] ?? 0) > 0
 ));
 ?>
-<section class="page ficha-page">
-    <div class="ficha-header">
+ <div class="ficha-header">
         <div class="ficha-header-copy">
             <p class="kicker"><?= $isEdit ? 'Ficha de Deportista' : 'Nuevo deportista' ?></p>
             <h1><?= $isEdit ? 'Editar deportista' : 'Crear deportista' ?></h1>
@@ -43,6 +42,8 @@ $competenciaAssignmentsSummary = array_values(array_filter(
             <button type="submit" form="deportista-form" class="button">Guardar ficha</button>
         </div>
     </div>
+<section class="page ficha-page">
+   
 
     <nav class="ficha-tabs" aria-label="Secciones de la ficha">
         <a class="ficha-tab is-active" href="#info-personal">Información personal</a>
@@ -59,7 +60,7 @@ $competenciaAssignmentsSummary = array_values(array_filter(
             <?php endforeach; ?>
         </div>
     <?php endif; ?>
-
+    <div class="container">
     <form id="deportista-form" class="ficha-form" method="post" action="<?= e(base_url('/?page=deportistas&action=' . $action)) ?>">
         <?php if ($isEdit): ?>
             <input type="hidden" name="id" value="<?= e((string) $deportista['id']) ?>">
@@ -351,6 +352,7 @@ $competenciaAssignmentsSummary = array_values(array_filter(
             </div>
         </div>
     </form>
+    </div>
 </section>
 
 <script>
