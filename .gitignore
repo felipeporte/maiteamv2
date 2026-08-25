@@ -9,6 +9,7 @@
 .env
 .env.*
 !.env.example
+.codex/
 
 # Generated frontend files and dependencies
 node_modules/

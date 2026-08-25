@@ -65,6 +65,15 @@ O bien:
 ./deploy.sh --migrate interno/migration/003_asistencia_clases.sql
 ```
 
+Desde tu equipo local puedes usar el helper del repositorio:
+
+```bash
+./deploy-prod.sh
+./deploy-prod.sh --migrate interno/migration/005_modalidades_competencia_asignacion.sql
+```
+
+Por defecto usa la llave local `~/Documents/maiteam/artistico.pem` y el host productivo configurado en el script. Puedes sobreescribirlos con `DEPLOY_HOST`, `DEPLOY_USER`, `DEPLOY_KEY` y `DEPLOY_REMOTE_DIR`.
+
 El archivo `.env` no se versiona. Debe existir en cada servidor con las credenciales reales de la base de datos.
 
 ## Estructura
