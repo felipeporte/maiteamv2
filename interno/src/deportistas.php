@@ -5,7 +5,7 @@ declare(strict_types=1);
 function deportistas_all(): array
 {
     $stmt = db()->query(
-        'SELECT d.id, d.nombre, d.fecha_nacimiento, d.categoria, d.nivel_id, d.activo, '
+        'SELECT d.id, d.nombre, d.rut, d.fecha_nacimiento, d.categoria, d.nivel_id, d.activo, '
         . 'CASE '
         . '    WHEN d.fecha_nacimiento IS NULL THEN NULL '
         . '    ELSE YEAR(CURDATE()) - YEAR(d.fecha_nacimiento) '
