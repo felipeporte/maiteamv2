@@ -53,6 +53,23 @@ function modalidades_competencia_reglas_all(): array
     return $stmt->fetchAll();
 }
 
+function modalidades_competencia_niveles_globales(): array
+{
+    if (!modalidades_competencia_schema_ready()) {
+        return [];
+    }
+
+    $stmt = db()->query(
+        'SELECT nivel, MIN(id) AS sort_order '
+        . 'FROM modalidades_competencia_reglas '
+        . 'WHERE activo = 1 '
+        . 'GROUP BY nivel '
+        . 'ORDER BY sort_order ASC, nivel ASC'
+    );
+
+    return $stmt->fetchAll();
+}
+
 function modalidades_competencia_reglas_por_modalidad(int $modalidadId): array
 {
     if (!modalidades_competencia_schema_ready()) {

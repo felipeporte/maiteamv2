@@ -28,7 +28,7 @@ $navSections = [
     ],
     'Soporte' => [
         ['key' => 'reportes', 'label' => 'Reportes', 'icon' => 'chart'],
-        ['key' => 'eventos', 'label' => 'Eventos', 'icon' => 'spark'],
+        ['key' => 'eventos', 'label' => 'Eventos federados', 'icon' => 'spark'],
     ],
 ];
 

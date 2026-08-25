@@ -1305,6 +1305,168 @@ if ($page === 'inscripciones') {
 
 $page = $_GET['page'] ?? 'home';
 
+if ($page === 'eventos') {
+    $action = $_GET['action'] ?? 'list';
+    $flash = $_GET['flash'] ?? null;
+    $schemaReady = eventos_federados_schema_ready();
+    $nivelesEvento = modalidades_competencia_niveles_globales();
+    $eventos = eventos_federados_all();
+    $blankEvento = [
+        'id' => 0,
+        'nombre' => '',
+        'nivel' => '',
+        'fecha_inicio' => '',
+        'fecha_fin' => '',
+        'lugar' => '',
+        'costo_inscripcion' => '0.00',
+        'cupo' => '',
+        'estado' => 'borrador',
+        'observaciones' => '',
+    ];
+    $errors = [];
+    $eventoForm = $blankEvento;
+    $evento = null;
+    $inscripciones = [];
+    $deportistasElegibles = [];
+
+    if ($schemaReady && in_array($action, ['show', 'edit'], true)) {
+        $id = (int) ($_GET['id'] ?? 0);
+        $evento = $id > 0 ? evento_federado_find($id) : null;
+        if ($evento === null) {
+            render('404', [
+                'title' => page_title('404'),
+                'page' => $page,
+            ]);
+            exit;
+        }
+        $eventoForm = array_merge($blankEvento, $evento);
+        $inscripciones = evento_federado_inscripciones_all((int) $evento['id']);
+        $deportistasElegibles = evento_federado_deportistas_elegibles($evento);
+    }
+
+    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        if (!$schemaReady) {
+            $errors[] = 'Falta aplicar la migracion de eventos federados en esta base de datos.';
+        } else {
+            $postAction = $_POST['action'] ?? $action;
+            $eventoId = (int) ($_POST['id'] ?? ($_POST['evento_id'] ?? 0));
+            $form = [
+                'nombre' => trim($_POST['nombre'] ?? ''),
+                'nivel' => trim($_POST['nivel'] ?? ''),
+                'fecha_inicio' => trim($_POST['fecha_inicio'] ?? ''),
+                'fecha_fin' => trim($_POST['fecha_fin'] ?? ''),
+                'lugar' => trim($_POST['lugar'] ?? ''),
+                'costo_inscripcion' => (float) str_replace(',', '.', (string) ($_POST['costo_inscripcion'] ?? '0')),
+                'cupo' => (int) ($_POST['cupo'] ?? 0),
+                'estado' => trim($_POST['estado'] ?? 'borrador'),
+                'observaciones' => trim($_POST['observaciones'] ?? ''),
+            ];
+
+            if ($postAction === 'delete') {
+                if ($eventoId > 0) {
+                    evento_federado_delete($eventoId);
+                }
+                redirect(base_url('/?page=eventos&flash=deleted'));
+            }
+
+            if ($postAction === 'inscribir') {
+                $inscripcionDeportistaId = (int) ($_POST['deportista_id'] ?? 0);
+                $inscripcionData = [
+                    'deportista_modalidades_competencia_id' => (int) ($_POST['deportista_modalidades_competencia_id'] ?? 0),
+                    'fecha_inscripcion' => trim((string) ($_POST['fecha_inscripcion'] ?? '')),
+                    'monto' => (float) str_replace(',', '.', (string) ($_POST['monto'] ?? '0')),
+                    'estado_pago' => trim((string) ($_POST['estado_pago'] ?? 'pendiente')),
+                    'referencia' => trim((string) ($_POST['referencia'] ?? '')),
+                    'observaciones' => trim((string) ($_POST['observaciones_inscripcion'] ?? '')),
+                ];
+
+                if ($eventoId <= 0) {
+                    $errors[] = 'No se encontro el evento.';
+                } elseif ($inscripcionDeportistaId <= 0) {
+                    $errors[] = 'Debes seleccionar un deportista.';
+                } else {
+                    try {
+                        evento_federado_inscribir($eventoId, $inscripcionDeportistaId, $inscripcionData);
+                        redirect(base_url('/?page=eventos&action=show&id=' . $eventoId . '&flash=registered'));
+                    } catch (Throwable $e) {
+                        $errors[] = $e->getMessage() !== '' ? $e->getMessage() : 'No se pudo registrar la inscripcion.';
+                    }
+                }
+
+                $evento = $eventoId > 0 ? evento_federado_find($eventoId) : null;
+                if ($evento !== null) {
+                    $eventoForm = array_merge($blankEvento, $evento);
+                    $inscripciones = evento_federado_inscripciones_all((int) $evento['id']);
+                    $deportistasElegibles = evento_federado_deportistas_elegibles($evento);
+                }
+            } else {
+                if ($form['nombre'] === '') {
+                    $errors[] = 'El nombre del evento es obligatorio.';
+                }
+                if ($form['nivel'] === '') {
+                    $errors[] = 'Debes seleccionar un nivel.';
+                }
+                if ($form['fecha_inicio'] === '') {
+                    $errors[] = 'La fecha de inicio es obligatoria.';
+                }
+                if ($form['fecha_fin'] !== '' && $form['fecha_fin'] < $form['fecha_inicio']) {
+                    $errors[] = 'La fecha de termino no puede ser menor a la fecha de inicio.';
+                }
+                if (!in_array($form['estado'], ['borrador', 'abierto', 'cerrado', 'finalizado'], true)) {
+                    $errors[] = 'El estado del evento no es valido.';
+                }
+                if ($form['costo_inscripcion'] < 0) {
+                    $errors[] = 'El costo de inscripcion no puede ser negativo.';
+                }
+                if ($form['cupo'] < 0) {
+                    $errors[] = 'El cupo no puede ser negativo.';
+                }
+
+                if (empty($errors)) {
+                    if ($postAction === 'create') {
+                        $newId = evento_federado_create($form);
+                        redirect(base_url('/?page=eventos&action=show&id=' . $newId . '&flash=created'));
+                    }
+
+                    if ($postAction === 'edit') {
+                        if ($eventoId > 0) {
+                            evento_federado_update($eventoId, $form);
+                            redirect(base_url('/?page=eventos&action=show&id=' . $eventoId . '&flash=updated'));
+                        }
+                        $errors[] = 'No se encontro el evento.';
+                    }
+                }
+
+                $eventoForm = array_merge($blankEvento, $form, ['id' => $eventoId]);
+                if ($eventoId > 0) {
+                    $evento = evento_federado_find($eventoId);
+                    if ($evento !== null) {
+                        $inscripciones = evento_federado_inscripciones_all((int) $evento['id']);
+                        $deportistasElegibles = evento_federado_deportistas_elegibles($evento);
+                    }
+                }
+            }
+        }
+    }
+
+    $view = 'eventos';
+    render($view, [
+        'title' => page_title('eventos'),
+        'page' => $page,
+        'action' => $action,
+        'flash' => $flash,
+        'errors' => $errors,
+        'schema_ready' => $schemaReady,
+        'eventos' => $eventos,
+        'evento' => $evento,
+        'evento_form' => $eventoForm,
+        'inscripciones' => $inscripciones,
+        'deportistas_elegibles' => $deportistasElegibles,
+        'niveles_evento' => $nivelesEvento,
+    ]);
+    exit;
+}
+
 if ($page === 'competencias') {
     $action = $_GET['action'] ?? 'list';
     $flash = $_GET['flash'] ?? null;

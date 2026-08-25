@@ -71,6 +71,9 @@ Desde tu equipo local puedes usar el helper del repositorio:
 ./deploy-prod.sh
 ./deploy-prod.sh --migrate interno/migration/005_modalidades_competencia_asignacion.sql
 ./deploy-prod.sh --migrate interno/migration/006_deportistas_avatar.sql
+./deploy-prod.sh --migrate interno/migration/007_eventos_federados.sql
+./deploy-prod.sh --migrate interno/migration/008_eventos_federados_inscripcion_modalidad.sql
+./deploy-prod.sh --migrate interno/migration/009_eventos_federados_unique_asignacion.sql
 ```
 
 Por defecto usa la llave local `~/Documents/maiteam/artistico.pem` y el host productivo configurado en el script. Puedes sobreescribirlos con `DEPLOY_HOST`, `DEPLOY_USER`, `DEPLOY_KEY` y `DEPLOY_REMOTE_DIR`.

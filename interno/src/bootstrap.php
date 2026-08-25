@@ -17,6 +17,7 @@ require __DIR__ . '/inscripciones.php';
 require __DIR__ . '/cuotas.php';
 require __DIR__ . '/reportes.php';
 require __DIR__ . '/competencias.php';
+require __DIR__ . '/eventos.php';
 require __DIR__ . '/certificados.php';
 
 $baseConfig = require __DIR__ . '/../config/app.php';

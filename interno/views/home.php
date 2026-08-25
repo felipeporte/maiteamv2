@@ -51,8 +51,8 @@ $periodoSeleccionado = $kpi_periodo ?? ($kpi['periodo'] ?? date('Y-m'));
         <a href="<?= e(config('base_url')) ?>/?page=pagos">Configurar</a>
     </article>
     <article class="card">
-        <h2>Eventos</h2>
-        <p>Planifica entrenamientos y actividades.</p>
+        <h2>Eventos federados</h2>
+        <p>Gestiona competencias federadas e inscripciones por nivel.</p>
         <a href="<?= e(config('base_url')) ?>/?page=eventos">Configurar</a>
     </article>
     <article class="card">

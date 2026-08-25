@@ -379,3 +379,62 @@ INSERT INTO `modalidades` (`id`, `nombre`, `costo_mensual`, `coach_id`, `activo`
 (10, 'Danza Zoom', 0.00, 2, 1, '2026-02-10 15:59:10', NULL),
 (11, 'Transicion - Maira', 20000.00, 1, 1, '2026-02-10 21:51:45', NULL),
 (12, 'Transicion - Maite', 50000.00, 2, 1, '2026-02-10 21:52:00', NULL);
+
+--
+-- Estructura para eventos federados
+--
+
+CREATE TABLE IF NOT EXISTS `eventos_federados` (
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `nombre` varchar(160) NOT NULL,
+  `nivel` varchar(80) NOT NULL,
+  `fecha_inicio` date NOT NULL,
+  `fecha_fin` date DEFAULT NULL,
+  `lugar` varchar(160) DEFAULT NULL,
+  `costo_inscripcion` decimal(10,2) NOT NULL DEFAULT 0.00,
+  `cupo` smallint(5) unsigned DEFAULT NULL,
+  `estado` enum('borrador','abierto','cerrado','finalizado') NOT NULL DEFAULT 'borrador',
+  `observaciones` varchar(255) DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_eventos_federados_nivel` (`nivel`),
+  KEY `idx_eventos_federados_fecha_inicio` (`fecha_inicio`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `evento_federado_inscripciones` (
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `evento_id` int(10) unsigned NOT NULL,
+  `deportista_id` int(10) unsigned NOT NULL,
+  `deportista_modalidades_competencia_id` int(10) unsigned DEFAULT NULL,
+  `modalidad_competencia_id` int(10) unsigned DEFAULT NULL,
+  `subnivel` varchar(80) DEFAULT NULL,
+  `categoria` varchar(80) DEFAULT NULL,
+  `apoderado_id` int(10) unsigned NOT NULL,
+  `fecha_inscripcion` date NOT NULL,
+  `monto` decimal(10,2) NOT NULL DEFAULT 0.00,
+  `estado_pago` enum('pendiente','pagado','anulado') NOT NULL DEFAULT 'pendiente',
+  `referencia` varchar(120) DEFAULT NULL,
+  `observaciones` varchar(255) DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_evento_federado_asignacion` (`evento_id`,`deportista_modalidades_competencia_id`),
+  KEY `idx_evento_federado_inscripciones_evento` (`evento_id`),
+  KEY `idx_evento_federado_inscripciones_deportista` (`deportista_id`),
+  KEY `idx_evento_federado_inscripciones_asignacion` (`deportista_modalidades_competencia_id`),
+  KEY `idx_evento_federado_inscripciones_apoderado` (`apoderado_id`),
+  KEY `idx_evento_federado_inscripciones_estado` (`estado_pago`),
+  CONSTRAINT `fk_evento_federado_inscripciones_deportista_modalidad`
+    FOREIGN KEY (`deportista_modalidades_competencia_id`) REFERENCES `deportista_modalidades_competencia` (`id`)
+    ON DELETE SET NULL ON UPDATE CASCADE,
+  CONSTRAINT `fk_evento_federado_inscripciones_evento`
+    FOREIGN KEY (`evento_id`) REFERENCES `eventos_federados` (`id`)
+    ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT `fk_evento_federado_inscripciones_deportista`
+    FOREIGN KEY (`deportista_id`) REFERENCES `deportistas` (`id`)
+    ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT `fk_evento_federado_inscripciones_apoderado`
+    FOREIGN KEY (`apoderado_id`) REFERENCES `apoderados` (`id`)
+    ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

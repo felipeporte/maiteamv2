@@ -42,6 +42,7 @@ Luego puedes usar `db()` desde cualquier archivo para obtener un `PDO`.
 - pagos_clases: detalle de clases incluidas en un pago.
 - Modalidades: costos mensuales por tipo de clase.
 - Inscripciones: deportistas asociados a modalidades.
+- Eventos federados: competencias por modalidad y nivel con inscripcion de deportistas.
 - Cuotas socios: cuota fija mensual por apoderado.
 
 El esquema inicial esta en `interno/sql/schema.sql`.

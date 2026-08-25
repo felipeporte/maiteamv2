@@ -206,12 +206,12 @@ function page_title(string $view): string
         'modalidades' => 'Modalidades - Club MaiTeam',
         'inscripciones' => 'Inscripciones - Club MaiTeam',
         'competencias' => 'Competencias - Club MaiTeam',
+        'eventos' => 'Eventos federados - Club MaiTeam',
         'cuotas' => 'Cuotas socios - Club MaiTeam',
         'reportes' => 'Reportes - Club MaiTeam',
         'certificados' => 'Certificados - Club MaiTeam',
         'pagos' => 'Pagos - Club MaiTeam',
         'transferencias' => 'Transferencias coaches - Club MaiTeam',
-        'eventos' => 'Eventos - Club MaiTeam',
         '404' => 'No encontrado - Club MaiTeam',
     ];
 
