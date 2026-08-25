@@ -7,6 +7,8 @@
   --accent-dark: #c35b98;
   --danger: #b24b89;
   --shadow: 0 20px 46px rgba(37, 37, 43, 0.16);
+  --sidebar-expanded: 290px;
+  --sidebar-collapsed: 92px;
 }
 
 * {
@@ -24,12 +26,10 @@ body {
   min-height: 100vh;
 }
 
-.site-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 22px 8vw 12px;
-  gap: 24px;
+.app-shell {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: var(--sidebar-expanded) minmax(0, 1fr);
 }
 
 .brand {
@@ -38,10 +38,58 @@ body {
   gap: 16px;
 }
 
+.sidebar {
+  position: sticky;
+  top: 0;
+  align-self: start;
+  min-height: 100vh;
+  padding: 24px 18px;
+  background: rgba(255, 255, 255, 0.74);
+  border-right: 1px solid rgba(100, 100, 100, 0.16);
+  backdrop-filter: blur(14px);
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  overflow: hidden;
+  transition: width 0.22s ease, padding 0.22s ease;
+}
+
 .brand-logo {
   width: 56px;
   height: 56px;
   object-fit: contain;
+}
+
+.sidebar-top {
+  display: grid;
+  gap: 16px;
+}
+
+.sidebar-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  padding: 11px 14px;
+  border: 0;
+  border-radius: 14px;
+  background: rgba(229, 123, 180, 0.12);
+  color: var(--text);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.sidebar-toggle-icon {
+  width: 18px;
+  height: 18px;
+  display: inline-flex;
+}
+
+.sidebar-toggle-icon svg {
+  width: 100%;
+  height: 100%;
 }
 
 .brand-title {
@@ -57,27 +105,114 @@ body {
   font-size: 0.85rem;
 }
 
-.site-nav {
-  display: flex;
-  gap: 16px;
-  flex-wrap: wrap;
+.sidebar-nav {
+  display: grid;
+  gap: 18px;
 }
 
-.nav-link {
+.sidebar-group-title {
+  margin: 0 0 10px;
+  font-size: 0.74rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
   color: var(--muted);
+  font-weight: 800;
+}
+
+.sidebar-links {
+  display: grid;
+  gap: 6px;
+}
+
+.sidebar-link {
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  color: var(--text);
   text-decoration: none;
   font-weight: 600;
-  padding-bottom: 6px;
-  border-bottom: 2px solid transparent;
+  padding: 11px 14px;
+  border-radius: 14px;
+  transition: background-color 0.18s ease, transform 0.18s ease, color 0.18s ease;
 }
 
-.nav-link.is-active {
+.sidebar-link:hover {
+  background: rgba(229, 123, 180, 0.12);
+  transform: translateX(2px);
+}
+
+.sidebar-link.is-active {
   color: var(--text);
-  border-color: var(--accent-dark);
+  background: linear-gradient(135deg, rgba(229, 123, 180, 0.2), rgba(195, 91, 152, 0.12));
+  box-shadow: inset 0 0 0 1px rgba(195, 91, 152, 0.16);
+}
+
+.sidebar-link-icon {
+  width: 20px;
+  height: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent-dark);
+}
+
+.sidebar-link-icon svg {
+  width: 20px;
+  height: 20px;
+}
+
+.sidebar-footer {
+  margin-top: auto;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.app-content {
+  min-width: 0;
+}
+
+.sidebar-collapsed .app-shell {
+  grid-template-columns: var(--sidebar-collapsed) minmax(0, 1fr);
+}
+
+.sidebar-collapsed .sidebar {
+  padding-left: 14px;
+  padding-right: 14px;
+}
+
+.sidebar-collapsed .brand-copy,
+.sidebar-collapsed .sidebar-toggle-text,
+.sidebar-collapsed .sidebar-group-title,
+.sidebar-collapsed .sidebar-link-text,
+.sidebar-collapsed .sidebar-footer-text {
+  display: none;
+}
+
+.sidebar-collapsed .brand {
+  justify-content: center;
+}
+
+.sidebar-collapsed .sidebar-toggle {
+  padding-inline: 0;
+}
+
+.sidebar-collapsed .sidebar-link {
+  grid-template-columns: 1fr;
+  justify-items: center;
+  padding-inline: 0;
+}
+
+.sidebar-collapsed .sidebar-links {
+  gap: 8px;
+}
+
+.sidebar-collapsed .sidebar-link-icon {
+  color: var(--text);
 }
 
 .main-content {
-  padding: 32px 8vw 48px;
+  padding: 32px clamp(20px, 4vw, 48px) 48px;
 }
 
 .hero {
@@ -214,13 +349,16 @@ body {
 }
 
 @media (max-width: 720px) {
-  .site-header {
-    flex-direction: column;
-    align-items: flex-start;
+  .sidebar {
+    min-height: 100vh;
   }
 
-  .site-nav {
+  .sidebar-nav {
     width: 100%;
+  }
+
+  .main-content {
+    padding-top: 24px;
   }
 }
 
