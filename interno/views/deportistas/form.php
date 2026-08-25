@@ -26,15 +26,31 @@ foreach ($modalidades_competencia as $modalidad) {
 $competenciaEdad = $sugerencias_competencia['edad_competencia'] ?? null;
 $competenciaCategorias = $sugerencias_competencia['categorias'] ?? [];
 $competenciaOptionsUrl = base_url('/?page=deportistas&action=competencia-options');
+$competenciaAssignmentsSummary = array_values(array_filter(
+    $competenciaAssignments,
+    static fn (array $assignment): bool => (int) ($assignment['modalidad_competencia_id'] ?? 0) > 0
+));
 ?>
-<section class="page">
-    <div class="page-header">
-        <div>
-            <h1><?= $isEdit ? 'Editar deportista' : 'Nuevo deportista' ?></h1>
-            <p><?= $isEdit ? 'Actualiza los datos del deportista.' : 'Completa la informacion del deportista.' ?></p>
+<section class="page ficha-page">
+    <div class="ficha-header">
+        <div class="ficha-header-copy">
+            <p class="kicker"><?= $isEdit ? 'Ficha de Deportista' : 'Nuevo deportista' ?></p>
+            <h1><?= $isEdit ? 'Editar deportista' : 'Crear deportista' ?></h1>
+            <p><?= $isEdit ? 'Completa la informacion del deportista y sus modalidades.' : 'Completa la informacion del deportista y sus modalidades.' ?></p>
         </div>
-        <a class="button ghost" href="<?= e(base_url('/?page=deportistas')) ?>">Volver</a>
+        <div class="ficha-header-actions">
+            <a class="button ghost" href="<?= e(base_url('/?page=deportistas')) ?>">Cancelar</a>
+            <button type="submit" form="deportista-form" class="button">Guardar ficha</button>
+        </div>
     </div>
+
+    <nav class="ficha-tabs" aria-label="Secciones de la ficha">
+        <a class="ficha-tab is-active" href="#info-personal">Información personal</a>
+        <a class="ficha-tab" href="#modalidades-niveles">Modalidades y niveles</a>
+        <a class="ficha-tab" href="#datos-adicionales">Datos adicionales</a>
+        <a class="ficha-tab" href="#documentos">Documentos</a>
+        <a class="ficha-tab" href="#observaciones">Observaciones</a>
+    </nav>
 
     <?php if (!empty($errors)): ?>
         <div class="alert danger">
@@ -44,215 +60,295 @@ $competenciaOptionsUrl = base_url('/?page=deportistas&action=competencia-options
         </div>
     <?php endif; ?>
 
-    <form class="form" method="post" action="<?= e(base_url('/?page=deportistas&action=' . $action)) ?>">
+    <form id="deportista-form" class="ficha-form" method="post" action="<?= e(base_url('/?page=deportistas&action=' . $action)) ?>">
         <?php if ($isEdit): ?>
             <input type="hidden" name="id" value="<?= e((string) $deportista['id']) ?>">
         <?php endif; ?>
 
-        <label>
-            Apoderado
-            <select name="apoderado_id" required>
-                <option value="">Selecciona un apoderado</option>
-                <?php foreach ($apoderados as $apoderado): ?>
-                    <option value="<?= e((string) $apoderado['id']) ?>" <?= (int) $deportista['apoderado_id'] === (int) $apoderado['id'] ? 'selected' : '' ?>>
-                        <?= e($apoderado['nombre']) ?>
-                    </option>
-                <?php endforeach; ?>
-            </select>
-        </label>
-
-        <label>
-            Nombre
-            <input type="text" name="nombre" required value="<?= e($deportista['nombre'] ?? '') ?>">
-        </label>
-
-        <label>
-            RUT
-            <input type="text" name="rut" required value="<?= e(format_rut($deportista['rut'] ?? '')) ?>" placeholder="12345678-9">
-        </label>
-
-        <label>
-            Fecha de nacimiento
-            <input type="date" name="fecha_nacimiento" value="<?= e($deportista['fecha_nacimiento'] ?? '') ?>">
-        </label>
-
-        <label>
-            Categoria general / clases
-            <input type="text" name="categoria" value="<?= e($deportista['categoria'] ?? '') ?>">
-            <span class="hint">Este campo se mantiene para la ficha general del deportista y no reemplaza la asignacion competitiva.</span>
-        </label>
-
-        <label>
-            Nivel
-            <select name="nivel_id" required>
-                <option value="">Selecciona un nivel</option>
-                <?php foreach ($niveles as $nivel): ?>
-                    <option value="<?= e((string) $nivel['id']) ?>" <?= (int) ($deportista['nivel_id'] ?? 0) === (int) $nivel['id'] ? 'selected' : '' ?>>
-                        <?= e($nivel['nombre']) ?>
-                    </option>
-                <?php endforeach; ?>
-            </select>
-        </label>
-
-        <section
-            class="form-group competencia-builder"
-            data-competencia-builder
-            data-options-url="<?= e($competenciaOptionsUrl) ?>"
-            data-modalidad-no-compite-id="<?= e((string) $modalidadNoCompiteId) ?>"
-        >
-            <div class="competencia-builder-head">
-                <div>
-                    <p class="form-label">Asignacion competitiva</p>
-                    <p class="hint">Selecciona una modalidad y el sistema cargara niveles y subniveles por AJAX. La categoria se calcula segun la edad de competencia.</p>
-                </div>
-                <button type="button" class="button ghost" data-competencia-add>Agregar modalidad</button>
-            </div>
-
-            <?php if (empty($competencia_schema_ready)): ?>
-                <div class="alert danger">
-                    Falta aplicar la migracion de modalidades de competencia en la base de datos que usa esta instancia.
-                </div>
-            <?php endif; ?>
-
-            <?php if ($competenciaEdad !== null): ?>
-                <div class="alert">
-                    <p><strong>Edad de competencia:</strong> <span class="chip"><?= e((string) $competenciaEdad) ?> años</span></p>
-                    <?php if (!empty($competenciaCategorias)): ?>
-                        <p class="hint">Categorias posibles segun la edad: <?= e(implode(', ', $competenciaCategorias)) ?></p>
-                    <?php endif; ?>
-                </div>
-            <?php endif; ?>
-
-            <div class="competencia-assignments" data-competencia-assignments>
-                <?php foreach ($competenciaAssignments as $index => $assignment): ?>
-                    <?php
-                    $selectedModalidadId = (int) ($assignment['modalidad_competencia_id'] ?? 0);
-                    $selectedModalidad = $modalidadesById[$selectedModalidadId] ?? null;
-                    $selectedNivel = (string) ($assignment['nivel'] ?? '');
-                    $selectedSubnivel = (string) ($assignment['subnivel'] ?? '');
-                    $selectedCategoria = (string) ($assignment['categoria'] ?? '');
-                    $nivelesDisponibles = $selectedModalidadId > 0 ? modalidades_competencia_niveles_por_modalidad($selectedModalidadId) : [];
-                    $subnivelesDisponibles = ($selectedModalidadId > 0 && $selectedNivel !== '')
-                        ? modalidades_competencia_subniveles_por_modalidad_y_nivel($selectedModalidadId, $selectedNivel)
-                        : [];
-                    $isNoCompite = ($selectedModalidad['codigo'] ?? '') === 'no_compite';
-                    ?>
-                    <article class="competencia-row" data-competencia-row data-index="<?= e((string) $index) ?>">
-                        <div class="competencia-row-grid">
-                            <label>
-                                Modalidad *
-                                <select data-competencia-field="modalidad" name="competencia_assignments[<?= e((string) $index) ?>][modalidad_competencia_id]" required>
-                                    <option value="">Selecciona una modalidad</option>
-                                    <?php foreach ($modalidades_competencia as $modalidad): ?>
-                                        <option
-                                            value="<?= e((string) $modalidad['id']) ?>"
-                                            data-codigo="<?= e((string) ($modalidad['codigo'] ?? '')) ?>"
-                                            <?= (int) $modalidad['id'] === $selectedModalidadId ? 'selected' : '' ?>
-                                        >
-                                            <?= e($modalidad['nombre']) ?>
-                                        </option>
-                                    <?php endforeach; ?>
-                                </select>
-                            </label>
-
-                            <label>
-                                Nivel *
-                                <select data-competencia-field="nivel" name="competencia_assignments[<?= e((string) $index) ?>][nivel]" <?= $isNoCompite ? 'disabled' : '' ?>>
-                                    <option value="">Selecciona un nivel</option>
-                                    <?php foreach ($nivelesDisponibles as $nivelDisponible): ?>
-                                        <option value="<?= e((string) $nivelDisponible['nivel']) ?>" <?= $selectedNivel === (string) $nivelDisponible['nivel'] ? 'selected' : '' ?>>
-                                            <?= e((string) $nivelDisponible['nivel']) ?>
-                                        </option>
-                                    <?php endforeach; ?>
-                                </select>
-                            </label>
-
-                            <label>
-                                Subnivel *
-                                <select data-competencia-field="subnivel" name="competencia_assignments[<?= e((string) $index) ?>][subnivel]" <?= $isNoCompite ? 'disabled' : '' ?>>
-                                    <option value="">Selecciona un subnivel</option>
-                                    <?php foreach ($subnivelesDisponibles as $subnivelDisponible): ?>
-                                        <option value="<?= e((string) $subnivelDisponible['subnivel']) ?>" <?= $selectedSubnivel === (string) $subnivelDisponible['subnivel'] ? 'selected' : '' ?>>
-                                            <?= e((string) $subnivelDisponible['subnivel']) ?>
-                                        </option>
-                                    <?php endforeach; ?>
-                                </select>
-                            </label>
-
-                            <div class="competencia-preview">
-                                <p class="form-label">Categoria</p>
-                                <?php if ($selectedCategoria !== ''): ?>
-                                    <span class="chip" data-competencia-preview><?= e($selectedCategoria) ?></span>
-                                <?php elseif ($isNoCompite): ?>
-                                    <span class="chip" data-competencia-preview>No compite</span>
-                                <?php else: ?>
-                                    <span class="chip muted" data-competencia-preview>Pendiente</span>
-                                <?php endif; ?>
-                                <p class="hint">La categoria se completa segun la edad de competencia.</p>
-                            </div>
+        <div class="ficha-layout">
+            <div class="ficha-main">
+                <section id="info-personal" class="ficha-card">
+                    <div class="ficha-card-head">
+                        <div>
+                            <p class="form-label">Información personal</p>
+                            <p class="hint">Datos base del deportista.</p>
                         </div>
-
-                        <div class="competencia-row-actions">
-                            <button type="button" class="button ghost" data-competencia-remove>Quitar</button>
-                        </div>
-                    </article>
-                <?php endforeach; ?>
-            </div>
-
-            <template data-competencia-template>
-                <article class="competencia-row" data-competencia-row data-index="__INDEX__">
-                    <div class="competencia-row-grid">
+                    </div>
+                    <div class="ficha-grid ficha-grid-2">
                         <label>
-                            Modalidad *
-                            <select data-competencia-field="modalidad" name="competencia_assignments[__INDEX__][modalidad_competencia_id]" required>
-                                <option value="">Selecciona una modalidad</option>
-                                <?php foreach ($modalidades_competencia as $modalidad): ?>
-                                    <option
-                                        value="<?= e((string) $modalidad['id']) ?>"
-                                        data-codigo="<?= e((string) ($modalidad['codigo'] ?? '')) ?>"
-                                    >
-                                        <?= e($modalidad['nombre']) ?>
+                            Apoderado
+                            <select name="apoderado_id" required>
+                                <option value="">Selecciona un apoderado</option>
+                                <?php foreach ($apoderados as $apoderado): ?>
+                                    <option value="<?= e((string) $apoderado['id']) ?>" <?= (int) $deportista['apoderado_id'] === (int) $apoderado['id'] ? 'selected' : '' ?>>
+                                        <?= e($apoderado['nombre']) ?>
                                     </option>
                                 <?php endforeach; ?>
                             </select>
                         </label>
 
                         <label>
-                            Nivel *
-                            <select data-competencia-field="nivel" name="competencia_assignments[__INDEX__][nivel]" disabled>
-                                <option value="">Selecciona un nivel</option>
-                            </select>
+                            Nombre
+                            <input type="text" name="nombre" required value="<?= e($deportista['nombre'] ?? '') ?>">
                         </label>
 
                         <label>
-                            Subnivel *
-                            <select data-competencia-field="subnivel" name="competencia_assignments[__INDEX__][subnivel]" disabled>
-                                <option value="">Selecciona un subnivel</option>
+                            RUT
+                            <input type="text" name="rut" required value="<?= e(format_rut($deportista['rut'] ?? '')) ?>" placeholder="12345678-9">
+                        </label>
+
+                        <label>
+                            Fecha de nacimiento
+                            <input type="date" name="fecha_nacimiento" value="<?= e($deportista['fecha_nacimiento'] ?? '') ?>">
+                        </label>
+                    </div>
+                </section>
+
+                <section id="modalidades-niveles" class="ficha-card">
+                    <div class="ficha-card-head ficha-card-head-split">
+                        <div>
+                            <p class="form-label">Modalidades y niveles</p>
+                            <p class="hint">Selecciona una modalidad y el sistema cargara niveles y subniveles por AJAX.</p>
+                        </div>
+                        <button type="button" class="button ghost" data-competencia-add>Agregar modalidad</button>
+                    </div>
+
+                    <div class="ficha-grid ficha-grid-2 ficha-grid-gap">
+                        <div
+                            class="form-group competencia-builder"
+                            data-competencia-builder
+                            data-options-url="<?= e($competenciaOptionsUrl) ?>"
+                            data-modalidad-no-compite-id="<?= e((string) $modalidadNoCompiteId) ?>"
+                        >
+                            <?php if (empty($competencia_schema_ready)): ?>
+                                <div class="alert danger">
+                                    Falta aplicar la migracion de modalidades de competencia en la base de datos que usa esta instancia.
+                                </div>
+                            <?php endif; ?>
+
+                            <?php if ($competenciaEdad !== null): ?>
+                                <div class="alert ficha-alert-inline">
+                                    <p><strong>Edad de competencia:</strong> <span class="chip"><?= e((string) $competenciaEdad) ?> años</span></p>
+                                    <?php if (!empty($competenciaCategorias)): ?>
+                                        <p class="hint">Categorias posibles segun la edad: <?= e(implode(', ', $competenciaCategorias)) ?></p>
+                                    <?php endif; ?>
+                                </div>
+                            <?php endif; ?>
+
+                            <div class="competencia-assignments" data-competencia-assignments>
+                                <?php foreach ($competenciaAssignments as $index => $assignment): ?>
+                                    <?php
+                                    $selectedModalidadId = (int) ($assignment['modalidad_competencia_id'] ?? 0);
+                                    $selectedModalidad = $modalidadesById[$selectedModalidadId] ?? null;
+                                    $selectedNivel = (string) ($assignment['nivel'] ?? '');
+                                    $selectedSubnivel = (string) ($assignment['subnivel'] ?? '');
+                                    $selectedCategoria = (string) ($assignment['categoria'] ?? '');
+                                    $nivelesDisponibles = $selectedModalidadId > 0 ? modalidades_competencia_niveles_por_modalidad($selectedModalidadId) : [];
+                                    $subnivelesDisponibles = ($selectedModalidadId > 0 && $selectedNivel !== '')
+                                        ? modalidades_competencia_subniveles_por_modalidad_y_nivel($selectedModalidadId, $selectedNivel)
+                                        : [];
+                                    $isNoCompite = ($selectedModalidad['codigo'] ?? '') === 'no_compite';
+                                    ?>
+                                    <article class="competencia-row" data-competencia-row data-index="<?= e((string) $index) ?>">
+                                        <div class="competencia-row-grid">
+                                            <label>
+                                                Modalidad *
+                                                <select data-competencia-field="modalidad" name="competencia_assignments[<?= e((string) $index) ?>][modalidad_competencia_id]" required>
+                                                    <option value="">Selecciona una modalidad</option>
+                                                    <?php foreach ($modalidades_competencia as $modalidad): ?>
+                                                        <option
+                                                            value="<?= e((string) $modalidad['id']) ?>"
+                                                            data-codigo="<?= e((string) ($modalidad['codigo'] ?? '')) ?>"
+                                                            <?= (int) $modalidad['id'] === $selectedModalidadId ? 'selected' : '' ?>
+                                                        >
+                                                            <?= e($modalidad['nombre']) ?>
+                                                        </option>
+                                                    <?php endforeach; ?>
+                                                </select>
+                                            </label>
+
+                                            <label>
+                                                Nivel *
+                                                <select data-competencia-field="nivel" name="competencia_assignments[<?= e((string) $index) ?>][nivel]" <?= $isNoCompite ? 'disabled' : '' ?>>
+                                                    <option value="">Selecciona un nivel</option>
+                                                    <?php foreach ($nivelesDisponibles as $nivelDisponible): ?>
+                                                        <option value="<?= e((string) $nivelDisponible['nivel']) ?>" <?= $selectedNivel === (string) $nivelDisponible['nivel'] ? 'selected' : '' ?>>
+                                                            <?= e((string) $nivelDisponible['nivel']) ?>
+                                                        </option>
+                                                    <?php endforeach; ?>
+                                                </select>
+                                            </label>
+
+                                            <label>
+                                                Subnivel *
+                                                <select data-competencia-field="subnivel" name="competencia_assignments[<?= e((string) $index) ?>][subnivel]" <?= $isNoCompite ? 'disabled' : '' ?>>
+                                                    <option value="">Selecciona un subnivel</option>
+                                                    <?php foreach ($subnivelesDisponibles as $subnivelDisponible): ?>
+                                                        <option value="<?= e((string) $subnivelDisponible['subnivel']) ?>" <?= $selectedSubnivel === (string) $subnivelDisponible['subnivel'] ? 'selected' : '' ?>>
+                                                            <?= e((string) $subnivelDisponible['subnivel']) ?>
+                                                        </option>
+                                                    <?php endforeach; ?>
+                                                </select>
+                                            </label>
+
+                                            <div class="competencia-preview">
+                                                <p class="form-label">Categoria</p>
+                                                <?php if ($selectedCategoria !== ''): ?>
+                                                    <span class="chip" data-competencia-preview><?= e($selectedCategoria) ?></span>
+                                                <?php elseif ($isNoCompite): ?>
+                                                    <span class="chip" data-competencia-preview>No compite</span>
+                                                <?php else: ?>
+                                                    <span class="chip muted" data-competencia-preview>Pendiente</span>
+                                                <?php endif; ?>
+                                                <p class="hint">La categoria se completa segun la edad de competencia.</p>
+                                            </div>
+                                        </div>
+
+                                        <div class="competencia-row-actions">
+                                            <button type="button" class="button ghost" data-competencia-remove>Quitar</button>
+                                        </div>
+                                    </article>
+                                <?php endforeach; ?>
+                            </div>
+
+                            <template data-competencia-template>
+                                <article class="competencia-row" data-competencia-row data-index="__INDEX__">
+                                    <div class="competencia-row-grid">
+                                        <label>
+                                            Modalidad *
+                                            <select data-competencia-field="modalidad" name="competencia_assignments[__INDEX__][modalidad_competencia_id]" required>
+                                                <option value="">Selecciona una modalidad</option>
+                                                <?php foreach ($modalidades_competencia as $modalidad): ?>
+                                                    <option
+                                                        value="<?= e((string) $modalidad['id']) ?>"
+                                                        data-codigo="<?= e((string) ($modalidad['codigo'] ?? '')) ?>"
+                                                    >
+                                                        <?= e($modalidad['nombre']) ?>
+                                                    </option>
+                                                <?php endforeach; ?>
+                                            </select>
+                                        </label>
+
+                                        <label>
+                                            Nivel *
+                                            <select data-competencia-field="nivel" name="competencia_assignments[__INDEX__][nivel]" disabled>
+                                                <option value="">Selecciona un nivel</option>
+                                            </select>
+                                        </label>
+
+                                        <label>
+                                            Subnivel *
+                                            <select data-competencia-field="subnivel" name="competencia_assignments[__INDEX__][subnivel]" disabled>
+                                                <option value="">Selecciona un subnivel</option>
+                                            </select>
+                                        </label>
+
+                                        <div class="competencia-preview">
+                                            <p class="form-label">Categoria</p>
+                                            <span class="chip muted" data-competencia-preview>Pendiente</span>
+                                            <p class="hint">La categoria se completara luego de elegir la modalidad, el nivel y el subnivel.</p>
+                                        </div>
+                                    </div>
+
+                                    <div class="competencia-row-actions">
+                                        <button type="button" class="button ghost" data-competencia-remove>Quitar</button>
+                                    </div>
+                                </article>
+                            </template>
+                        </div>
+
+                        <aside class="ficha-summary">
+                            <div class="ficha-card ficha-card-compact">
+                                <p class="form-label">Resumen</p>
+                                <p class="hint">Vista rapida del deportista y sus asignaciones.</p>
+                                <div class="ficha-summary-meta">
+                                    <div>
+                                        <span class="chip"><?= e($deportista['activo'] ? 'Activo' : 'Inactivo') ?></span>
+                                    </div>
+                                    <?php if ($competenciaEdad !== null): ?>
+                                        <div>
+                                            <span class="chip"><?= e((string) $competenciaEdad) ?> años</span>
+                                        </div>
+                                    <?php endif; ?>
+                                </div>
+                                <p class="ficha-summary-count"><?= e((string) count($competenciaAssignmentsSummary)) ?> modalidades agregadas</p>
+                                <?php if (!empty($competenciaAssignmentsSummary)): ?>
+                                    <ul class="ficha-summary-list">
+                                        <?php foreach ($competenciaAssignmentsSummary as $assignment): ?>
+                                            <?php
+                                            $summaryParts = array_filter([
+                                                trim((string) ($assignment['nivel'] ?? '')),
+                                                trim((string) ($assignment['subnivel'] ?? '')),
+                                            ]);
+                                            $summaryLabel = !empty($summaryParts) ? implode(' · ', $summaryParts) : 'Pendiente';
+                                            ?>
+                                            <li>
+                                                <strong><?= e((string) ($assignment['modalidad_nombre'] ?? 'Modalidad')) ?></strong>
+                                                <span><?= e($summaryLabel) ?></span>
+                                            </li>
+                                        <?php endforeach; ?>
+                                    </ul>
+                                <?php else: ?>
+                                    <p class="ficha-placeholder">Aun no hay modalidades agregadas.</p>
+                                <?php endif; ?>
+                            </div>
+                        </aside>
+                    </div>
+                </section>
+
+                <section id="datos-adicionales" class="ficha-card">
+                    <div class="ficha-card-head">
+                        <div>
+                            <p class="form-label">Datos adicionales</p>
+                            <p class="hint">Informacion que no pertenece a la ficha competitiva.</p>
+                        </div>
+                    </div>
+                    <div class="ficha-grid ficha-grid-2">
+                        <label>
+                            Categoria general / clases
+                            <input type="text" name="categoria" value="<?= e($deportista['categoria'] ?? '') ?>">
+                            <span class="hint">Este campo se mantiene para la ficha general del deportista y no reemplaza la asignacion competitiva.</span>
+                        </label>
+
+                        <label>
+                            Nivel
+                            <select name="nivel_id" required>
+                                <option value="">Selecciona un nivel</option>
+                                <?php foreach ($niveles as $nivel): ?>
+                                    <option value="<?= e((string) $nivel['id']) ?>" <?= (int) ($deportista['nivel_id'] ?? 0) === (int) $nivel['id'] ? 'selected' : '' ?>>
+                                        <?= e($nivel['nombre']) ?>
+                                    </option>
+                                <?php endforeach; ?>
                             </select>
                         </label>
 
-                        <div class="competencia-preview">
-                            <p class="form-label">Categoria</p>
-                            <span class="chip muted" data-competencia-preview>Pendiente</span>
-                            <p class="hint">La categoria se completara luego de elegir la modalidad, el nivel y el subnivel.</p>
+                        <label class="checkbox ficha-checkbox">
+                            <input type="checkbox" name="activo" <?= !empty($deportista['activo']) ? 'checked' : '' ?>>
+                            Activo
+                        </label>
+                    </div>
+                </section>
+
+                <section id="documentos" class="ficha-card ficha-card-muted">
+                    <div class="ficha-card-head">
+                        <div>
+                            <p class="form-label">Documentos</p>
+                            <p class="hint">Seccion preparada para agregar archivos o respaldos mas adelante.</p>
                         </div>
                     </div>
+                    <p class="ficha-placeholder">Estructura reservada para documentos del deportista.</p>
+                </section>
 
-                    <div class="competencia-row-actions">
-                        <button type="button" class="button ghost" data-competencia-remove>Quitar</button>
+                <section id="observaciones" class="ficha-card ficha-card-muted">
+                    <div class="ficha-card-head">
+                        <div>
+                            <p class="form-label">Observaciones</p>
+                            <p class="hint">Espacio reservado para notas internas.</p>
+                        </div>
                     </div>
-                </article>
-            </template>
-        </section>
-
-        <label class="checkbox">
-            <input type="checkbox" name="activo" <?= !empty($deportista['activo']) ? 'checked' : '' ?>>
-            Activo
-        </label>
-
-        <div class="form-actions">
-            <button type="submit" class="button"><?= $isEdit ? 'Guardar cambios' : 'Crear deportista' ?></button>
-            <a class="button ghost" href="<?= e(base_url('/?page=deportistas')) ?>">Cancelar</a>
+                    <p class="ficha-placeholder">Estructura reservada para observaciones del deportista.</p>
+                </section>
+            </div>
         </div>
     </form>
 </section>
@@ -270,7 +366,6 @@ $competenciaOptionsUrl = base_url('/?page=deportistas&action=competencia-options
     const optionsUrl = builder.dataset.optionsUrl || '';
     const modalidadNoCompiteId = Number(builder.dataset.modalidadNoCompiteId || '0');
     const fechaNacimientoInput = document.querySelector('input[name="fecha_nacimiento"]');
-    const emptyLabel = 'Selecciona una opcion';
 
     let nextIndex = Array.from(assignmentsWrap.querySelectorAll('[data-competencia-row]')).reduce((max, row) => {
         const rowIndex = Number(row.dataset.index || '0');
