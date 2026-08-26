@@ -33,21 +33,21 @@ $navSections = [
 ];
 
 $navIcons = [
-    'home' => '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11.5 12 4l8 7.5V20a1 1 0 0 1-1 1h-4.5v-6h-5v6H5a1 1 0 0 1-1-1z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>',
-    'users' => '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16.5 21v-2a4.5 4.5 0 0 0-4.5-4.5H7a4.5 4.5 0 0 0-4.5 4.5v2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="9.5" cy="7" r="3" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M20.5 21v-1.2a4 4 0 0 0-2.7-3.8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M14.5 4.7a3 3 0 0 1 0 5.7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
-    'user-check' => '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10" cy="7" r="3.2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M3.8 20a6.2 6.2 0 0 1 12.4 0" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="m14.8 12.8 1.8 1.8 3.7-3.7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>',
-    'users-gear' => '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16.4 17.4a2.2 2.2 0 1 0 4.4 0 2.2 2.2 0 0 0-4.4 0Z" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="m18.6 13.6.3-1.1m0 4.8-.3-1.1m2.3-2.3h-1.1m-4.8 0h1.1m3.2-3-.8.8m-3.4 3.4-.8.8m0-5 1.1.3m4.8 0-1.1.3" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><circle cx="8.5" cy="8" r="3" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M2.8 20a5.7 5.7 0 0 1 11.4 0" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
-    'calendar' => '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5.5" width="17" height="15" rx="2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M7 3.5v4M17 3.5v4M3.5 10h17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
-    'checklist' => '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h2M4 12h2M4 18h2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="m8 6 1 1 2-2M8 12l1 1 2-2M8 18l1 1 2-2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M14 6h6M14 12h6M14 18h6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
-    'layers' => '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 4 8 4-8 4-8-4 8-4Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="m4 12 8 4 8-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="m4 16 8 4 8-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>',
-    'clipboard' => '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="4.5" width="12" height="16" rx="2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M9 4.5a3 3 0 0 1 6 0" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M9 10h6M9 14h6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
-    'medal' => '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="10.5" r="5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="m9 3.5 1.8 4m4.2-4-1.8 4M10 14.8 8.5 20l3.5-2 3.5 2-1.5-5.2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>',
-    'badge' => '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5 16.8 6v5.2c0 3.1-2.1 6.2-4.8 7.3-2.7-1.1-4.8-4.2-4.8-7.3V6L12 3.5Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="m9.5 11.2 1.8 1.8 3.2-3.2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>',
-    'receipt' => '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3.8h12v16l-2-1.2-2 1.2-2-1.2-2 1.2-2-1.2-2 1.2z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M8 8h8M8 12h8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
-    'wallet' => '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 7.5h15A2.5 2.5 0 0 1 22 10v6.5A2.5 2.5 0 0 1 19.5 19h-15A2.5 2.5 0 0 1 2 16.5V10a2.5 2.5 0 0 1 2.5-2.5Z" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M16 13.5h4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M4.8 7.5V6.2A2.2 2.2 0 0 1 7 4h10" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
-    'arrows' => '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7h11l-3-3M7 7l3 3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M17 17H6l3 3M17 17l-3-3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>',
-    'chart' => '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19.5h16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M7 16v-4M12 16V8M17 16v-7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M6 16.5 10.5 12l3 2.5 4.5-6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>',
-    'spark' => '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 2 1.6 5.4L19 9l-5.4 1.6L12 16l-1.6-5.4L5 9l5.4-1.6L12 2Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="m18.5 14 1 3.2L23 18l-3.5 1-1 3.2-1-3.2L14 18l3.5-0.8L18.5 14Z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>',
+    'home' => 'home',
+    'users' => 'groups',
+    'user-check' => 'person_check',
+    'users-gear' => 'manage_accounts',
+    'calendar' => 'calendar_month',
+    'checklist' => 'checklist',
+    'layers' => 'layers',
+    'clipboard' => 'assignment',
+    'medal' => 'workspace_premium',
+    'badge' => 'badge',
+    'receipt' => 'receipt_long',
+    'wallet' => 'account_balance_wallet',
+    'arrows' => 'swap_horiz',
+    'chart' => 'query_stats',
+    'spark' => 'event',
 ];
 
 $renderIcon = static function (string $key) use ($navIcons): string {
@@ -60,6 +60,9 @@ $renderIcon = static function (string $key) use ($navIcons): string {
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title><?= e($title) ?></title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&family=Material+Symbols+Outlined&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="<?= e($baseUrl) ?>/assets/css/app.css">
 </head>
 <body>
@@ -75,7 +78,7 @@ $renderIcon = static function (string $key) use ($navIcons): string {
                 </div>
                 <button class="sidebar-toggle" type="button" aria-expanded="true" aria-controls="sidebar-nav" data-sidebar-toggle>
                     <span class="sidebar-toggle-icon" aria-hidden="true">
-                        <svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+                        <span class="material-symbols-outlined">menu</span>
                     </span>
                     <span class="sidebar-toggle-text">Menú</span>
                 </button>
@@ -94,7 +97,7 @@ $renderIcon = static function (string $key) use ($navIcons): string {
                                     aria-label="<?= e($item['label']) ?>"
                                 >
                                     <span class="sidebar-link-icon" aria-hidden="true">
-                                        <?= $renderIcon($item['icon']) ?>
+                                        <span class="material-symbols-outlined"><?= e($renderIcon($item['icon'])) ?></span>
                                     </span>
                                     <span class="sidebar-link-text">
                                         <?= e($item['label']) ?>

@@ -97,12 +97,7 @@ $avatarInitials = static function (string $name): string {
                         <form method="post" action="<?= e(base_url('/?page=deportistas&action=delete')) ?>" onsubmit="return confirm('Eliminar este deportista?');">
                             <input type="hidden" name="id" value="<?= e((string) $deportista['id']) ?>">
                             <button type="submit" class="button icon danger" aria-label="Eliminar deportista">
-                                <svg viewBox="0 0 24 24" aria-hidden="true">
-                                    <path d="M4.5 6.5h15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-                                    <path d="M9 6.5V5.2A1.2 1.2 0 0 1 10.2 4h3.6A1.2 1.2 0 0 1 15 5.2v1.3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-                                    <path d="M8 9.5v7M12 9.5v7M16 9.5v7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-                                    <path d="M6.5 6.5l.7 12.2A1.8 1.8 0 0 0 9 20.5h6a1.8 1.8 0 0 0 1.8-1.8l.7-12.2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
-                                </svg>
+                                <span class="material-symbols-outlined" aria-hidden="true">delete</span>
                             </button>
                         </form>
                     </div>

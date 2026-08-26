@@ -56,26 +56,25 @@ $competenciaAssignmentsSummary = array_values(array_filter(
     static fn (array $assignment): bool => (int) ($assignment['modalidad_competencia_id'] ?? 0) > 0
 ));
 ?>
- <div class="ficha-header">
+<section class="page ficha-page">
+    <div class="ficha-header">
         <div class="ficha-header-copy">
             <p class="kicker"><?= $isEdit ? 'Ficha de Deportista' : 'Nuevo deportista' ?></p>
             <h1><?= $isEdit ? 'Editar deportista' : 'Crear deportista' ?></h1>
-            <p><?= $isEdit ? 'Completa la informacion del deportista y sus modalidades.' : 'Completa la informacion del deportista y sus modalidades.' ?></p>
+            <p>Completa la informacion base y sus modalidades.</p>
         </div>
         <div class="ficha-header-actions">
             <a class="button ghost" href="<?= e(base_url('/?page=deportistas')) ?>">Cancelar</a>
             <button type="submit" form="deportista-form" class="button">Guardar ficha</button>
         </div>
     </div>
-<section class="page ficha-page">
-   
 
-    <nav class="ficha-tabs" aria-label="Secciones de la ficha">
-        <a class="ficha-tab is-active" href="#info-personal">Información personal</a>
-        <a class="ficha-tab" href="#modalidades-niveles">Modalidades y niveles</a>
-        <a class="ficha-tab" href="#datos-adicionales">Datos adicionales</a>
-        <a class="ficha-tab" href="#documentos">Documentos</a>
-        <a class="ficha-tab" href="#observaciones">Observaciones</a>
+    <nav class="ficha-tabs" aria-label="Secciones de la ficha" role="tablist">
+        <a id="tab-info-personal" class="ficha-tab is-active" href="#info-personal" role="tab" aria-selected="true" aria-controls="info-personal" data-ficha-tab data-ficha-target="info-personal">Información personal</a>
+        <a id="tab-modalidades-niveles" class="ficha-tab" href="#modalidades-niveles" role="tab" aria-selected="false" aria-controls="modalidades-niveles" data-ficha-tab data-ficha-target="modalidades-niveles">Modalidades y niveles</a>
+        <a id="tab-datos-adicionales" class="ficha-tab" href="#datos-adicionales" role="tab" aria-selected="false" aria-controls="datos-adicionales" data-ficha-tab data-ficha-target="datos-adicionales">Datos adicionales</a>
+        <a id="tab-documentos" class="ficha-tab" href="#documentos" role="tab" aria-selected="false" aria-controls="documentos" data-ficha-tab data-ficha-target="documentos">Documentos</a>
+        <a id="tab-observaciones" class="ficha-tab" href="#observaciones" role="tab" aria-selected="false" aria-controls="observaciones" data-ficha-tab data-ficha-target="observaciones">Observaciones</a>
     </nav>
 
     <?php if (!empty($errors)): ?>
@@ -85,7 +84,6 @@ $competenciaAssignmentsSummary = array_values(array_filter(
             <?php endforeach; ?>
         </div>
     <?php endif; ?>
-    <div class="container">
     <form id="deportista-form" class="ficha-form" method="post" enctype="multipart/form-data" action="<?= e(base_url('/?page=deportistas&action=' . $action)) ?>">
         <?php if ($isEdit): ?>
             <input type="hidden" name="id" value="<?= e((string) $deportista['id']) ?>">
@@ -93,40 +91,39 @@ $competenciaAssignmentsSummary = array_values(array_filter(
 
         <div class="ficha-layout">
             <div class="ficha-main">
-                <section id="info-personal" class="ficha-card">
+                <section id="info-personal" class="ficha-card ficha-panel" role="tabpanel" aria-labelledby="tab-info-personal" data-ficha-panel>
                     <div class="ficha-card-head">
                         <div>
                             <p class="form-label">Información personal</p>
-                            <p class="hint">Datos base del deportista.</p>
                         </div>
                     </div>
                     <div class="ficha-personal-layout">
                         <div class="ficha-avatar-panel">
-                            <div
-                                class="deportista-avatar deportista-avatar--large"
-                                data-avatar-preview
-                                data-avatar-current-src="<?= e($deportistaAvatarUrl ?? '') ?>"
-                                data-avatar-initials="<?= e($deportistaAvatarInitials) ?>"
-                            >
-                                <?php if ($deportistaAvatarUrl): ?>
-                                    <img src="<?= e($deportistaAvatarUrl) ?>" alt="Avatar del deportista">
-                                <?php else: ?>
-                                    <span data-avatar-fallback><?= e($deportistaAvatarInitials) ?></span>
-                                <?php endif; ?>
-                            </div>
-                            <div class="ficha-avatar-copy">
-                                <label>
-                                    Imagen del deportista
-                                    <input type="file" name="avatar" accept="image/png,image/jpeg,image/webp,image/gif">
-                                </label>
-                                <span class="hint">PNG, JPG, WEBP o GIF. Recomendado cuadrada para que el avatar se vea mejor.</span>
-                            </div>
+                            <label class="avatar-picker" for="avatar-input">
+                                <div
+                                    class="deportista-avatar deportista-avatar--large"
+                                    data-avatar-preview
+                                    data-avatar-current-src="<?= e($deportistaAvatarUrl ?? '') ?>"
+                                    data-avatar-initials="<?= e($deportistaAvatarInitials) ?>"
+                                >
+                                    <?php if ($deportistaAvatarUrl): ?>
+                                        <img src="<?= e($deportistaAvatarUrl) ?>" alt="Avatar del deportista">
+                                    <?php else: ?>
+                                        <span data-avatar-fallback><?= e($deportistaAvatarInitials) ?></span>
+                                    <?php endif; ?>
+                                </div>
+                                <span class="avatar-picker-action">
+                                    <span class="material-symbols-outlined" aria-hidden="true">photo_camera</span>
+                                    <span>Cambiar avatar</span>
+                                </span>
+                            </label>
+                            <input id="avatar-input" class="avatar-picker-input" type="file" name="avatar" accept="image/png,image/jpeg,image/webp,image/gif">
                         </div>
 
-                        <div class="ficha-grid ficha-grid-2">
-                            <label>
-                                Apoderado
-                                <select name="apoderado_id" required>
+                        <div class="ficha-grid ficha-personal-grid">
+                            <div class="ficha-field">
+                                <label class="ficha-field-label" for="deportista-apoderado">Apoderado</label>
+                                <select id="deportista-apoderado" name="apoderado_id" required>
                                     <option value="">Selecciona un apoderado</option>
                                     <?php foreach ($apoderados as $apoderado): ?>
                                         <option value="<?= e((string) $apoderado['id']) ?>" <?= (int) $deportista['apoderado_id'] === (int) $apoderado['id'] ? 'selected' : '' ?>>
@@ -134,38 +131,65 @@ $competenciaAssignmentsSummary = array_values(array_filter(
                                         </option>
                                     <?php endforeach; ?>
                                 </select>
-                            </label>
+                            </div>
 
-                            <label>
-                                Nombre
-                                <input type="text" name="nombre" required value="<?= e($deportista['nombre'] ?? '') ?>">
-                            </label>
+                            <div class="ficha-field">
+                                <label class="ficha-field-label" for="deportista-nombre">Nombre</label>
+                                <input id="deportista-nombre" type="text" name="nombre" required value="<?= e($deportista['nombre'] ?? '') ?>">
+                            </div>
 
-                            <label>
-                                RUT
-                                <input type="text" name="rut" required value="<?= e(format_rut($deportista['rut'] ?? '')) ?>" placeholder="12345678-9">
-                            </label>
+                            <div class="ficha-field">
+                                <label class="ficha-field-label" for="deportista-rut">RUT</label>
+                                <input id="deportista-rut" type="text" name="rut" required value="<?= e(format_rut($deportista['rut'] ?? '')) ?>" placeholder="12345678-9">
+                            </div>
 
-                            <label>
-                                Fecha de nacimiento
-                                <input type="date" name="fecha_nacimiento" value="<?= e($deportista['fecha_nacimiento'] ?? '') ?>">
-                            </label>
+                            <div class="ficha-field">
+                                <label class="ficha-field-label" for="deportista-fecha-nacimiento">Fecha de nacimiento</label>
+                                <input id="deportista-fecha-nacimiento" type="date" name="fecha_nacimiento" value="<?= e($deportista['fecha_nacimiento'] ?? '') ?>">
+                            </div>
+
+                            <div class="ficha-field ficha-field-static">
+                                <p class="ficha-field-label">Edad de competencia</p>
+                                <?php if ($competenciaEdad !== null): ?>
+                                    <span class="chip"><?= e((string) $competenciaEdad) ?> años</span>
+                                    <?php if (!empty($competenciaCategorias)): ?>
+                                        <p class="hint">Categorias: <?= e(implode(', ', $competenciaCategorias)) ?></p>
+                                    <?php endif; ?>
+                                <?php else: ?>
+                                    <span class="chip muted">Pendiente</span>
+                                    <p class="hint">Se calcula al completar la fecha de nacimiento.</p>
+                                <?php endif; ?>
+                            </div>
+
+                            <div class="ficha-field ficha-field-static">
+                                <p class="ficha-field-label">Estado</p>
+                                <label class="checkbox ficha-inline-check">
+                                    <input type="checkbox" name="activo" <?= !empty($deportista['activo']) ? 'checked' : '' ?>>
+                                    Activo
+                                </label>
+                            </div>
                         </div>
                     </div>
                 </section>
 
-                <section id="modalidades-niveles" class="ficha-card">
+                <section id="modalidades-niveles" class="ficha-card ficha-panel" role="tabpanel" aria-labelledby="tab-modalidades-niveles" data-ficha-panel hidden>
                     <div class="ficha-card-head ficha-card-head-split">
                         <div>
                             <p class="form-label">Modalidades y niveles</p>
                             <p class="hint">Selecciona una modalidad y el sistema cargara niveles y subniveles por AJAX.</p>
                         </div>
-                        <button type="button" class="button ghost" data-competencia-add>Agregar modalidad</button>
+                        <div class="competencia-card-actions">
+                            <span class="chip muted" data-competencia-count>0 modalidades</span>
+                            <button type="button" class="button" data-competencia-add>
+                                <span class="material-symbols-outlined" aria-hidden="true">add</span>
+                                Agregar modalidad
+                            </button>
+                        </div>
                     </div>
 
-                    <div class="ficha-grid ficha-grid-2 ficha-grid-gap">
+                    <div class="competencia-layout">
                         <div
-                            class="form-group competencia-builder"
+                            class="competencia-builder"
                             data-competencia-builder
                             data-options-url="<?= e($competenciaOptionsUrl) ?>"
                             data-modalidad-no-compite-id="<?= e((string) $modalidadNoCompiteId) ?>"
@@ -200,6 +224,13 @@ $competenciaAssignmentsSummary = array_values(array_filter(
                                     $isNoCompite = ($selectedModalidad['codigo'] ?? '') === 'no_compite';
                                     ?>
                                     <article class="competencia-row" data-competencia-row data-index="<?= e((string) $index) ?>">
+                                        <div class="competencia-row-top">
+                                            <div>
+                                                <p class="competencia-row-title">Asignación competitiva</p>
+                                                <p class="competencia-row-subtitle">Completa modalidad, nivel, subnivel y categoría.</p>
+                                            </div>
+                                            <button type="button" class="button ghost" data-competencia-remove>Quitar</button>
+                                        </div>
                                         <div class="competencia-row-grid">
                                             <label>
                                                 Modalidad *
@@ -251,18 +282,21 @@ $competenciaAssignmentsSummary = array_values(array_filter(
                                                     <span class="chip muted" data-competencia-preview>Pendiente</span>
                                                 <?php endif; ?>
                                                 <p class="hint">La categoria se completa segun la edad de competencia.</p>
-                                            </div>
                                         </div>
-
-                                        <div class="competencia-row-actions">
-                                            <button type="button" class="button ghost" data-competencia-remove>Quitar</button>
-                                        </div>
+                                    </div>
                                     </article>
                                 <?php endforeach; ?>
                             </div>
 
                             <template data-competencia-template>
                                 <article class="competencia-row" data-competencia-row data-index="__INDEX__">
+                                    <div class="competencia-row-top">
+                                        <div>
+                                            <p class="competencia-row-title">Asignación competitiva</p>
+                                            <p class="competencia-row-subtitle">Completa modalidad, nivel, subnivel y categoría.</p>
+                                        </div>
+                                        <button type="button" class="button ghost" data-competencia-remove>Quitar</button>
+                                    </div>
                                     <div class="competencia-row-grid">
                                         <label>
                                             Modalidad *
@@ -299,28 +333,14 @@ $competenciaAssignmentsSummary = array_values(array_filter(
                                             <p class="hint">La categoria se completara luego de elegir la modalidad, el nivel y el subnivel.</p>
                                         </div>
                                     </div>
-
-                                    <div class="competencia-row-actions">
-                                        <button type="button" class="button ghost" data-competencia-remove>Quitar</button>
-                                    </div>
                                 </article>
                             </template>
                         </div>
 
-                        <aside class="ficha-summary">
+                        <aside class="ficha-summary competencia-summary">
                             <div class="ficha-card ficha-card-compact">
                                 <p class="form-label">Resumen</p>
                                 <p class="hint">Vista rapida del deportista y sus asignaciones.</p>
-                                <div class="ficha-summary-meta">
-                                    <div>
-                                        <span class="chip"><?= e($deportista['activo'] ? 'Activo' : 'Inactivo') ?></span>
-                                    </div>
-                                    <?php if ($competenciaEdad !== null): ?>
-                                        <div>
-                                            <span class="chip"><?= e((string) $competenciaEdad) ?> años</span>
-                                        </div>
-                                    <?php endif; ?>
-                                </div>
                                 <p class="ficha-summary-count"><?= e((string) count($competenciaAssignmentsSummary)) ?> modalidades agregadas</p>
                                 <?php if (!empty($competenciaAssignmentsSummary)): ?>
                                     <ul class="ficha-summary-list">
@@ -346,7 +366,7 @@ $competenciaAssignmentsSummary = array_values(array_filter(
                     </div>
                 </section>
 
-                <section id="datos-adicionales" class="ficha-card">
+                <section id="datos-adicionales" class="ficha-card ficha-panel" role="tabpanel" aria-labelledby="tab-datos-adicionales" data-ficha-panel hidden>
                     <div class="ficha-card-head">
                         <div>
                             <p class="form-label">Datos adicionales</p>
@@ -354,15 +374,15 @@ $competenciaAssignmentsSummary = array_values(array_filter(
                         </div>
                     </div>
                     <div class="ficha-grid ficha-grid-2">
-                        <label>
-                            Categoria general / clases
-                            <input type="text" name="categoria" value="<?= e($deportista['categoria'] ?? '') ?>">
+                        <div class="ficha-field">
+                            <label class="ficha-field-label" for="deportista-categoria">Categoria general / clases</label>
+                            <input id="deportista-categoria" type="text" name="categoria" value="<?= e($deportista['categoria'] ?? '') ?>">
                             <span class="hint">Este campo se mantiene para la ficha general del deportista y no reemplaza la asignacion competitiva.</span>
-                        </label>
+                        </div>
 
-                        <label>
-                            Nivel
-                            <select name="nivel_id" required>
+                        <div class="ficha-field">
+                            <label class="ficha-field-label" for="deportista-nivel">Nivel</label>
+                            <select id="deportista-nivel" name="nivel_id" required>
                                 <option value="">Selecciona un nivel</option>
                                 <?php foreach ($niveles as $nivel): ?>
                                     <option value="<?= e((string) $nivel['id']) ?>" <?= (int) ($deportista['nivel_id'] ?? 0) === (int) $nivel['id'] ? 'selected' : '' ?>>
@@ -370,16 +390,11 @@ $competenciaAssignmentsSummary = array_values(array_filter(
                                     </option>
                                 <?php endforeach; ?>
                             </select>
-                        </label>
-
-                        <label class="checkbox ficha-checkbox">
-                            <input type="checkbox" name="activo" <?= !empty($deportista['activo']) ? 'checked' : '' ?>>
-                            Activo
-                        </label>
+                        </div>
                     </div>
                 </section>
 
-                <section id="documentos" class="ficha-card ficha-card-muted">
+                <section id="documentos" class="ficha-card ficha-card-muted ficha-panel" role="tabpanel" aria-labelledby="tab-documentos" data-ficha-panel hidden>
                     <div class="ficha-card-head">
                         <div>
                             <p class="form-label">Documentos</p>
@@ -389,7 +404,7 @@ $competenciaAssignmentsSummary = array_values(array_filter(
                     <p class="ficha-placeholder">Estructura reservada para documentos del deportista.</p>
                 </section>
 
-                <section id="observaciones" class="ficha-card ficha-card-muted">
+                <section id="observaciones" class="ficha-card ficha-card-muted ficha-panel" role="tabpanel" aria-labelledby="tab-observaciones" data-ficha-panel hidden>
                     <div class="ficha-card-head">
                         <div>
                             <p class="form-label">Observaciones</p>
@@ -401,19 +416,69 @@ $competenciaAssignmentsSummary = array_values(array_filter(
             </div>
         </div>
     </form>
-    </div>
 </section>
 
 <script>
+(function () {
+    const tabs = Array.from(document.querySelectorAll('[data-ficha-tab]'));
+    const panels = Array.from(document.querySelectorAll('[data-ficha-panel]'));
+    if (!tabs.length || !panels.length) {
+        return;
+    }
+
+    const panelById = new Map(panels.map((panel) => [panel.id, panel]));
+
+    function activateTab(targetId, updateHash) {
+        const panel = panelById.get(targetId);
+        if (!panel) {
+            return;
+        }
+
+        tabs.forEach((tab) => {
+            const isActive = tab.dataset.fichaTarget === targetId;
+            tab.classList.toggle('is-active', isActive);
+            tab.setAttribute('aria-selected', isActive ? 'true' : 'false');
+        });
+
+        panels.forEach((candidate) => {
+            candidate.hidden = candidate.id !== targetId;
+        });
+
+        if (updateHash) {
+            history.replaceState(null, '', `#${targetId}`);
+        }
+    }
+
+    tabs.forEach((tab) => {
+        tab.addEventListener('click', (event) => {
+            const targetId = tab.dataset.fichaTarget || '';
+            if (!targetId) {
+                return;
+            }
+
+            event.preventDefault();
+            activateTab(targetId, true);
+        });
+    });
+
+    const initialTarget = panelById.has(window.location.hash.replace('#', ''))
+        ? window.location.hash.replace('#', '')
+        : (tabs.find((tab) => tab.classList.contains('is-active'))?.dataset?.fichaTarget || panels[0].id);
+
+    activateTab(initialTarget, false);
+})();
+
 (function () {
     const builder = document.querySelector('[data-competencia-builder]');
     if (!builder) {
         return;
     }
 
+    const section = builder.closest('.ficha-card') || document;
     const assignmentsWrap = builder.querySelector('[data-competencia-assignments]');
     const template = builder.querySelector('[data-competencia-template]');
-    const addButton = builder.querySelector('[data-competencia-add]');
+    const addButton = section.querySelector('[data-competencia-add]');
+    const countBadge = section.querySelector('[data-competencia-count]');
     const optionsUrl = builder.dataset.optionsUrl || '';
     const modalidadNoCompiteId = Number(builder.dataset.modalidadNoCompiteId || '0');
     const fechaNacimientoInput = document.querySelector('input[name="fecha_nacimiento"]');
@@ -482,6 +547,15 @@ $competenciaAssignmentsSummary = array_values(array_filter(
     function setRowBusy(row, busy) {
         row.classList.toggle('is-loading', busy);
         row.setAttribute('aria-busy', busy ? 'true' : 'false');
+    }
+
+    function updateAssignmentsCount() {
+        if (!countBadge) {
+            return;
+        }
+
+        const count = assignmentsWrap.querySelectorAll('[data-competencia-row]').length;
+        countBadge.textContent = count === 1 ? '1 modalidad' : `${count} modalidades`;
     }
 
     function getModalidadMeta(select) {
@@ -720,7 +794,7 @@ $competenciaAssignmentsSummary = array_values(array_filter(
         }
     }
 
-    function addRow() {
+    function addRow(focusFirstField = false) {
         const html = template.innerHTML.replace(/__INDEX__/g, String(nextIndex));
         nextIndex += 1;
         const wrapper = document.createElement('div');
@@ -728,6 +802,14 @@ $competenciaAssignmentsSummary = array_values(array_filter(
         const row = wrapper.firstElementChild;
         assignmentsWrap.appendChild(row);
         setPreview(row, 'Pendiente', true);
+        updateAssignmentsCount();
+
+        if (focusFirstField) {
+            window.requestAnimationFrame(() => {
+                row.querySelector('[data-competencia-field="modalidad"]')?.focus();
+            });
+        }
+
         return row;
     }
 
@@ -735,6 +817,8 @@ $competenciaAssignmentsSummary = array_values(array_filter(
         if (!assignmentsWrap.querySelector('[data-competencia-row]')) {
             addRow();
         }
+
+        updateAssignmentsCount();
     }
 
     assignmentsWrap.addEventListener('change', (event) => {
@@ -776,7 +860,7 @@ $competenciaAssignmentsSummary = array_values(array_filter(
 
     if (addButton) {
         addButton.addEventListener('click', () => {
-            addRow();
+            addRow(true);
         });
     }
 
@@ -819,5 +903,6 @@ $competenciaAssignmentsSummary = array_values(array_filter(
     });
 
     ensureAtLeastOneRow();
+    updateAssignmentsCount();
 })();
 </script>
