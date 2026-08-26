@@ -76,11 +76,10 @@ $renderIcon = static function (string $key) use ($navIcons): string {
                         <p class="brand-subtitle">Gestion interna</p>
                     </div>
                 </div>
-                <button class="sidebar-toggle" type="button" aria-expanded="true" aria-controls="sidebar-nav" data-sidebar-toggle>
-                    <span class="sidebar-toggle-icon" aria-hidden="true">
-                        <span class="material-symbols-outlined">menu</span>
+                <button class="sidebar-close" type="button" aria-label="Cerrar menú" data-sidebar-close>
+                    <span class="sidebar-close-icon" aria-hidden="true">
+                        <span class="material-symbols-outlined">close</span>
                     </span>
-                    <span class="sidebar-toggle-text">Menú</span>
                 </button>
             </div>
 
@@ -114,7 +113,21 @@ $renderIcon = static function (string $key) use ($navIcons): string {
             </div>
         </aside>
 
+        <div class="sidebar-backdrop" data-sidebar-backdrop hidden></div>
+
         <div class="app-content">
+            <header class="mobile-topbar">
+                <button class="mobile-menu-toggle" type="button" aria-expanded="false" aria-controls="sidebar-nav" aria-label="Abrir menú" data-sidebar-toggle>
+                    <span class="mobile-menu-toggle-icon" aria-hidden="true">
+                        <span class="material-symbols-outlined">menu</span>
+                    </span>
+                </button>
+                <div class="mobile-topbar-copy">
+                    <p class="mobile-topbar-kicker">Panel interno</p>
+                    <p class="mobile-topbar-title">Club MaiTeam</p>
+                </div>
+            </header>
+
             <main class="main-content">
                 <?php require $viewPath; ?>
             </main>
@@ -123,28 +136,58 @@ $renderIcon = static function (string $key) use ($navIcons): string {
 
     <script>
     (function () {
-        const storageKey = 'maiteam-sidebar-collapsed';
         const body = document.body;
-        const button = document.querySelector('[data-sidebar-toggle]');
-        if (!button) {
+        const openButton = document.querySelector('[data-sidebar-toggle]');
+        const closeButton = document.querySelector('[data-sidebar-close]');
+        const backdrop = document.querySelector('[data-sidebar-backdrop]');
+        if (!openButton || !closeButton || !backdrop) {
             return;
         }
 
         const mediaQuery = window.matchMedia('(max-width: 720px)');
-        const stored = localStorage.getItem(storageKey);
-        const collapsed = mediaQuery.matches ? true : (stored === null ? false : stored === 'true');
+        const mobileLinkSelector = '.sidebar-link';
 
-        function setCollapsedState(nextCollapsed) {
-            body.classList.toggle('sidebar-collapsed', nextCollapsed);
-            button.setAttribute('aria-expanded', String(!nextCollapsed));
-            localStorage.setItem(storageKey, nextCollapsed ? 'true' : 'false');
+        function setOpenState(nextOpen) {
+            const isMobile = mediaQuery.matches;
+            body.classList.toggle('sidebar-open', nextOpen && isMobile);
+            openButton.setAttribute('aria-expanded', String(nextOpen && isMobile));
+            closeButton.setAttribute('aria-expanded', String(nextOpen && isMobile));
+            backdrop.hidden = !(nextOpen && isMobile);
         }
 
-        setCollapsedState(collapsed);
+        function syncMode() {
+            setOpenState(false);
+        }
 
-        button.addEventListener('click', function () {
-            setCollapsedState(!body.classList.contains('sidebar-collapsed'));
+        openButton.addEventListener('click', function () {
+            setOpenState(!body.classList.contains('sidebar-open'));
         });
+
+        closeButton.addEventListener('click', function () {
+            setOpenState(false);
+        });
+
+        backdrop.addEventListener('click', function () {
+            setOpenState(false);
+        });
+
+        document.querySelectorAll(mobileLinkSelector).forEach(function (link) {
+            link.addEventListener('click', function () {
+                if (mediaQuery.matches) {
+                    setOpenState(false);
+                }
+            });
+        });
+
+        if (mediaQuery.matches) {
+            syncMode();
+        }
+
+        if (typeof mediaQuery.addEventListener === 'function') {
+            mediaQuery.addEventListener('change', syncMode);
+        } else if (typeof mediaQuery.addListener === 'function') {
+            mediaQuery.addListener(syncMode);
+        }
     })();
     </script>
 </body>
