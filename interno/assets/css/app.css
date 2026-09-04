@@ -929,6 +929,20 @@ textarea {
   white-space: nowrap;
 }
 
+.deportistas-active-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--text);
+  font-size: 0.85rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.deportistas-active-filter input {
+  accent-color: var(--accent);
+}
+
 .deportistas-search .button {
   padding: 10px 16px;
   white-space: nowrap;

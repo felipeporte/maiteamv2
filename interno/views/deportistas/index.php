@@ -2,6 +2,7 @@
 /** @var array $deportistas */
 /** @var string|null $flash */
 /** @var string $search */
+/** @var bool $active_only */
 
 $avatarPalettes = [
     ['start' => '#1f5fe0', 'end' => '#153a8a'],
@@ -55,6 +56,7 @@ $avatarInitials = static function (string $name): string {
 
     <form class="deportistas-search" method="get" action="<?= e(base_url('/')) ?>" role="search">
         <input type="hidden" name="page" value="deportistas">
+        <input type="hidden" name="active_only" value="0">
         <label class="sr-only" for="deportistas-search-input">Buscar deportista</label>
         <span class="material-symbols-outlined deportistas-search-icon" aria-hidden="true">search</span>
         <input
@@ -66,8 +68,12 @@ $avatarInitials = static function (string $name): string {
             autocomplete="off"
         >
         <?php if ($search !== ''): ?>
-            <a class="deportistas-search-clear" href="<?= e(base_url('/?page=deportistas')) ?>">Limpiar</a>
+            <a class="deportistas-search-clear" href="<?= e(base_url('/?page=deportistas&active_only=' . ($active_only ? '1' : '0'))) ?>">Limpiar</a>
         <?php endif; ?>
+        <label class="deportistas-active-filter">
+            <input type="checkbox" name="active_only" value="1" <?= $active_only ? 'checked' : '' ?>>
+            <span>Solo activos</span>
+        </label>
         <button class="button" type="submit">Buscar</button>
     </form>
 

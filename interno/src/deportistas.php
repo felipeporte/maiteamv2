@@ -2,9 +2,23 @@
 
 declare(strict_types=1);
 
-function deportistas_all(string $search = ''): array
+function deportistas_all(string $search = '', bool $activeOnly = true): array
 {
     $search = trim($search);
+    $conditions = [];
+    $parameters = [];
+
+    if ($activeOnly) {
+        $conditions[] = 'd.activo = 1';
+    }
+
+    if ($search !== '') {
+        $conditions[] = '(d.nombre LIKE :search_name OR d.rut LIKE :search_rut)';
+        $likeSearch = '%' . $search . '%';
+        $parameters['search_name'] = $likeSearch;
+        $parameters['search_rut'] = $likeSearch;
+    }
+
     $sql =
         'SELECT d.id, d.nombre, d.rut, d.avatar_path, d.fecha_nacimiento, d.categoria, d.nivel_id, d.activo, '
         . 'CASE '
@@ -25,14 +39,10 @@ function deportistas_all(string $search = ''): array
         . ') dm ON dm.deportista_id = d.id '
         . 'ORDER BY d.nombre';
 
-    if ($search !== '') {
-        $sql = str_replace('ORDER BY d.nombre', 'WHERE d.nombre LIKE :search_name OR d.rut LIKE :search_rut ORDER BY d.nombre', $sql);
+    if (!empty($conditions)) {
+        $sql = str_replace('ORDER BY d.nombre', 'WHERE ' . implode(' AND ', $conditions) . ' ORDER BY d.nombre', $sql);
         $stmt = db()->prepare($sql);
-        $likeSearch = '%' . $search . '%';
-        $stmt->execute([
-            'search_name' => $likeSearch,
-            'search_rut' => $likeSearch,
-        ]);
+        $stmt->execute($parameters);
     } else {
         $stmt = db()->query($sql);
     }

@@ -112,6 +112,7 @@ if ($page === 'deportistas') {
     $action = $_GET['action'] ?? 'list';
     $flash = $_GET['flash'] ?? null;
     $search = trim((string) ($_GET['q'] ?? ''));
+    $activeOnly = !isset($_GET['active_only']) || (string) $_GET['active_only'] === '1';
     $modalidadesCompetencia = modalidades_competencia_all();
     $modalidadesCompetenciaMap = [];
     $modalidadNoCompiteId = 0;
@@ -586,7 +587,8 @@ if ($page === 'deportistas') {
         'page' => $page,
         'flash' => $flash,
         'search' => $search,
-        'deportistas' => deportistas_all($search),
+        'active_only' => $activeOnly,
+        'deportistas' => deportistas_all($search, $activeOnly),
     ]);
     exit;
 }
