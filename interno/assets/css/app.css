@@ -1452,6 +1452,47 @@ tbody td {
   color: var(--muted);
 }
 
+.inscripciones-inline {
+  display: grid;
+  gap: 14px;
+}
+
+.inscripciones-inline-list {
+  display: grid;
+  gap: 12px;
+}
+
+.inscripcion-inline-row {
+  display: grid;
+  grid-template-columns: minmax(190px, 1.4fr) repeat(2, minmax(145px, 0.8fr)) auto auto;
+  gap: 12px;
+  align-items: end;
+  padding: 16px;
+  border: 1px solid rgba(100, 100, 100, 0.12);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.82);
+}
+
+.inscripcion-inline-row label {
+  display: grid;
+  gap: 6px;
+  font-weight: 600;
+}
+
+.inscripcion-inline-row input,
+.inscripcion-inline-row select {
+  width: 100%;
+}
+
+.inscripcion-inline-row .checkbox {
+  white-space: nowrap;
+  padding-bottom: 10px;
+}
+
+.inscripcion-inline-row .button {
+  white-space: nowrap;
+}
+
 .ficha-checkbox {
   align-self: start;
   margin-top: 4px;
@@ -1670,10 +1711,18 @@ tbody td {
   .competencia-row-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+
+  .inscripcion-inline-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 720px) {
   .competencia-row-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .inscripcion-inline-row {
     grid-template-columns: 1fr;
   }
 

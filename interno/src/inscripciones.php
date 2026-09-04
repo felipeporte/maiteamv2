@@ -29,6 +29,60 @@ function inscripcion_find(int $id): ?array
     return $row ?: null;
 }
 
+function inscripciones_por_deportista(int $deportistaId): array
+{
+    $stmt = db()->prepare(
+        'SELECT i.id, i.deportista_id, i.modalidad_id, i.fecha_inicio, i.fecha_fin, i.activo, '
+        . 'm.nombre AS modalidad_nombre, m.costo_mensual '
+        . 'FROM inscripciones i '
+        . 'INNER JOIN modalidades m ON m.id = i.modalidad_id '
+        . 'WHERE i.deportista_id = :deportista_id '
+        . 'ORDER BY i.activo DESC, i.fecha_inicio DESC, i.id DESC'
+    );
+    $stmt->execute(['deportista_id' => $deportistaId]);
+
+    return $stmt->fetchAll();
+}
+
+function inscripciones_sync_por_deportista(int $deportistaId, array $inscripciones): void
+{
+    $stmt = db()->prepare('SELECT id FROM inscripciones WHERE deportista_id = :deportista_id');
+    $stmt->execute(['deportista_id' => $deportistaId]);
+    $existingIds = array_map('intval', $stmt->fetchAll(PDO::FETCH_COLUMN));
+    $submittedIds = [];
+
+    foreach ($inscripciones as $inscripcion) {
+        $id = (int) ($inscripcion['id'] ?? 0);
+        if ($id > 0) {
+            if (!in_array($id, $existingIds, true)) {
+                throw new RuntimeException('Una de las inscripciones no pertenece a este deportista.');
+            }
+            inscripcion_update($id, [
+                'deportista_id' => $deportistaId,
+                'modalidad_id' => $inscripcion['modalidad_id'],
+                'fecha_inicio' => $inscripcion['fecha_inicio'],
+                'fecha_fin' => $inscripcion['fecha_fin'],
+                'activo' => $inscripcion['activo'],
+            ]);
+            $submittedIds[] = $id;
+            continue;
+        }
+
+        inscripcion_create([
+            'deportista_id' => $deportistaId,
+            'modalidad_id' => $inscripcion['modalidad_id'],
+            'fecha_inicio' => $inscripcion['fecha_inicio'],
+            'fecha_fin' => $inscripcion['fecha_fin'],
+            'activo' => $inscripcion['activo'],
+        ]);
+    }
+
+    $idsToDelete = array_diff($existingIds, $submittedIds);
+    foreach ($idsToDelete as $id) {
+        inscripcion_delete($id);
+    }
+}
+
 function inscripcion_create(array $data): int
 {
     $stmt = db()->prepare(

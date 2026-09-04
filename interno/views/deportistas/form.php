@@ -7,10 +7,14 @@
 /** @var array $sugerencias_competencia */
 /** @var bool $competencia_schema_ready */
 /** @var array $competencia_assignments */
+/** @var array $inscripciones */
+/** @var array $modalidades */
 /** @var string $action */
 
 $isEdit = $action === 'edit';
 $competenciaAssignments = $competencia_assignments ?? [];
+$inscripciones = $inscripciones ?? [];
+$modalidades = $modalidades ?? [];
 $deportistaNombre = trim((string) ($deportista['nombre'] ?? ''));
 $deportistaAvatarUrl = deportista_avatar_public_url($deportista['avatar_path'] ?? null);
 $deportistaAvatarInitials = (static function (string $name): string {
@@ -72,6 +76,7 @@ $competenciaAssignmentsSummary = array_values(array_filter(
     <nav class="ficha-tabs" aria-label="Secciones de la ficha" role="tablist">
         <a id="tab-info-personal" class="ficha-tab is-active" href="#info-personal" role="tab" aria-selected="true" aria-controls="info-personal" data-ficha-tab data-ficha-target="info-personal">Información personal</a>
         <a id="tab-modalidades-niveles" class="ficha-tab" href="#modalidades-niveles" role="tab" aria-selected="false" aria-controls="modalidades-niveles" data-ficha-tab data-ficha-target="modalidades-niveles">Modalidades y niveles</a>
+        <a id="tab-inscripciones" class="ficha-tab" href="#inscripciones" role="tab" aria-selected="false" aria-controls="inscripciones" data-ficha-tab data-ficha-target="inscripciones">Inscripciones</a>
         <a id="tab-datos-adicionales" class="ficha-tab" href="#datos-adicionales" role="tab" aria-selected="false" aria-controls="datos-adicionales" data-ficha-tab data-ficha-target="datos-adicionales">Datos adicionales</a>
         <a id="tab-documentos" class="ficha-tab" href="#documentos" role="tab" aria-selected="false" aria-controls="documentos" data-ficha-tab data-ficha-target="documentos">Documentos</a>
         <a id="tab-observaciones" class="ficha-tab" href="#observaciones" role="tab" aria-selected="false" aria-controls="observaciones" data-ficha-tab data-ficha-target="observaciones">Observaciones</a>
@@ -364,6 +369,89 @@ $competenciaAssignmentsSummary = array_values(array_filter(
                             </div>
                         </aside>
                     </div>
+                </section>
+
+                <section id="inscripciones" class="ficha-card ficha-panel" role="tabpanel" aria-labelledby="tab-inscripciones" data-ficha-panel hidden>
+                    <div class="ficha-card-head ficha-card-head-split">
+                        <div>
+                            <p class="form-label">Inscripciones</p>
+                            <p class="hint">Gestiona las modalidades contratadas y su vigencia desde la ficha.</p>
+                        </div>
+                        <?php if ($isEdit): ?>
+                            <button type="button" class="button" data-inscripcion-add>
+                                <span class="material-symbols-outlined" aria-hidden="true">add</span>
+                                Agregar inscripción
+                            </button>
+                        <?php endif; ?>
+                    </div>
+
+                    <?php if (!$isEdit): ?>
+                        <p class="ficha-placeholder">Guarda primero al deportista para poder agregar sus inscripciones.</p>
+                    <?php else: ?>
+                        <div class="inscripciones-inline" data-inscripciones-inline>
+                            <div class="inscripciones-inline-list" data-inscripciones-list>
+                                <?php foreach ($inscripciones as $index => $inscripcion): ?>
+                                    <article class="inscripcion-inline-row" data-inscripcion-row>
+                                        <input type="hidden" name="inscripciones[<?= e((string) $index) ?>][id]" value="<?= e((string) ($inscripcion['id'] ?? 0)) ?>">
+                                        <label>
+                                            Modalidad
+                                            <select name="inscripciones[<?= e((string) $index) ?>][modalidad_id]" required>
+                                                <option value="">Selecciona una modalidad</option>
+                                                <?php foreach ($modalidades as $modalidad): ?>
+                                                    <option value="<?= e((string) $modalidad['id']) ?>" <?= (int) ($inscripcion['modalidad_id'] ?? 0) === (int) $modalidad['id'] ? 'selected' : '' ?>>
+                                                        <?= e($modalidad['nombre']) ?> ($<?= e(number_format((float) $modalidad['costo_mensual'], 0, ',', '.')) ?>)
+                                                    </option>
+                                                <?php endforeach; ?>
+                                            </select>
+                                        </label>
+                                        <label>
+                                            Fecha inicio
+                                            <input type="date" name="inscripciones[<?= e((string) $index) ?>][fecha_inicio]" required value="<?= e((string) ($inscripcion['fecha_inicio'] ?? '')) ?>">
+                                        </label>
+                                        <label>
+                                            Fecha fin
+                                            <input type="date" name="inscripciones[<?= e((string) $index) ?>][fecha_fin]" value="<?= e((string) ($inscripcion['fecha_fin'] ?? '')) ?>">
+                                        </label>
+                                        <label class="checkbox">
+                                            <input type="checkbox" name="inscripciones[<?= e((string) $index) ?>][activo]" <?= !empty($inscripcion['activo']) ? 'checked' : '' ?>>
+                                            Activa
+                                        </label>
+                                        <button type="button" class="button ghost danger" data-inscripcion-remove>Quitar</button>
+                                    </article>
+                                <?php endforeach; ?>
+                            </div>
+                            <?php if (empty($inscripciones)): ?>
+                                <p class="ficha-placeholder" data-inscripciones-empty>No hay inscripciones registradas.</p>
+                            <?php endif; ?>
+                        </div>
+                        <template data-inscripcion-template>
+                            <article class="inscripcion-inline-row" data-inscripcion-row>
+                                <input type="hidden" name="inscripciones[__INDEX__][id]" value="0">
+                                <label>
+                                    Modalidad
+                                    <select name="inscripciones[__INDEX__][modalidad_id]" required>
+                                        <option value="">Selecciona una modalidad</option>
+                                        <?php foreach ($modalidades as $modalidad): ?>
+                                            <option value="<?= e((string) $modalidad['id']) ?>"><?= e($modalidad['nombre']) ?> ($<?= e(number_format((float) $modalidad['costo_mensual'], 0, ',', '.')) ?>)</option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </label>
+                                <label>
+                                    Fecha inicio
+                                    <input type="date" name="inscripciones[__INDEX__][fecha_inicio]" required>
+                                </label>
+                                <label>
+                                    Fecha fin
+                                    <input type="date" name="inscripciones[__INDEX__][fecha_fin]">
+                                </label>
+                                <label class="checkbox">
+                                    <input type="checkbox" name="inscripciones[__INDEX__][activo]" checked>
+                                    Activa
+                                </label>
+                                <button type="button" class="button ghost danger" data-inscripcion-remove>Quitar</button>
+                            </article>
+                        </template>
+                    <?php endif; ?>
                 </section>
 
                 <section id="datos-adicionales" class="ficha-card ficha-panel" role="tabpanel" aria-labelledby="tab-datos-adicionales" data-ficha-panel hidden>
@@ -904,5 +992,49 @@ $competenciaAssignmentsSummary = array_values(array_filter(
 
     ensureAtLeastOneRow();
     updateAssignmentsCount();
+})();
+
+(function () {
+    const inline = document.querySelector('[data-inscripciones-inline]');
+    const template = document.querySelector('[data-inscripcion-template]');
+    const addButton = document.querySelector('[data-inscripcion-add]');
+    const list = inline?.querySelector('[data-inscripciones-list]');
+    if (!inline || !template || !addButton || !list) {
+        return;
+    }
+
+    let nextIndex = list.querySelectorAll('[data-inscripcion-row]').length;
+
+    function updateEmptyState() {
+        const empty = list.querySelectorAll('[data-inscripcion-row]').length === 0;
+        let message = inline.querySelector('[data-inscripciones-empty]');
+        if (empty && !message) {
+            message = document.createElement('p');
+            message.className = 'ficha-placeholder';
+            message.dataset.inscripcionesEmpty = '';
+            message.textContent = 'No hay inscripciones registradas.';
+            inline.appendChild(message);
+        } else if (!empty && message) {
+            message.remove();
+        }
+    }
+
+    addButton.addEventListener('click', () => {
+        const row = template.content.firstElementChild.cloneNode(true);
+        row.innerHTML = row.innerHTML.replaceAll('__INDEX__', String(nextIndex++));
+        list.appendChild(row);
+        updateEmptyState();
+        row.querySelector('select')?.focus();
+    });
+
+    list.addEventListener('click', (event) => {
+        const removeButton = event.target.closest('[data-inscripcion-remove]');
+        if (!removeButton) {
+            return;
+        }
+
+        removeButton.closest('[data-inscripcion-row]')?.remove();
+        updateEmptyState();
+    });
 })();
 </script>

@@ -235,6 +235,11 @@ if ($page === 'deportistas') {
         $submittedId = (int) ($_POST['id'] ?? 0);
         $currentDeportista = $submittedId > 0 ? deportista_find($submittedId) : null;
         $currentAvatarPath = $currentDeportista['avatar_path'] ?? null;
+        $modalidades = modalidades_options();
+        $modalidadesMap = [];
+        foreach ($modalidades as $modalidad) {
+            $modalidadesMap[(int) $modalidad['id']] = $modalidad;
+        }
         $rawAssignments = (array) ($_POST['competencia_assignments'] ?? []);
         $competenciaAssignments = [];
         foreach ($rawAssignments as $assignment) {
@@ -258,6 +263,28 @@ if ($page === 'deportistas') {
             }
 
             $competenciaAssignments[] = $normalized;
+        }
+        $inscripciones = [];
+        $rawInscripciones = (array) ($_POST['inscripciones'] ?? []);
+        foreach ($rawInscripciones as $inscripcion) {
+            if (!is_array($inscripcion)) {
+                continue;
+            }
+
+            $normalized = [
+                'id' => (int) ($inscripcion['id'] ?? 0),
+                'modalidad_id' => (int) ($inscripcion['modalidad_id'] ?? 0),
+                'fecha_inicio' => trim((string) ($inscripcion['fecha_inicio'] ?? '')),
+                'fecha_fin' => trim((string) ($inscripcion['fecha_fin'] ?? '')),
+                'activo' => isset($inscripcion['activo']) ? 1 : 0,
+            ];
+
+            if ($normalized['id'] <= 0 && $normalized['modalidad_id'] <= 0
+                && $normalized['fecha_inicio'] === '' && $normalized['fecha_fin'] === '') {
+                continue;
+            }
+
+            $inscripciones[] = $normalized;
         }
         $form = [
             'apoderado_id' => (int) ($_POST['apoderado_id'] ?? 0),
@@ -297,6 +324,31 @@ if ($page === 'deportistas') {
         }
         if (empty($competenciaAssignments)) {
             $errors[] = 'Debes agregar al menos una modalidad de competencia.';
+        }
+
+        $existingInscriptionIds = $submittedId > 0
+            ? array_map('intval', array_column(inscripciones_por_deportista($submittedId), 'id'))
+            : [];
+        foreach ($inscripciones as $inscripcion) {
+            if ($inscripcion['id'] > 0 && !in_array($inscripcion['id'], $existingInscriptionIds, true)) {
+                $errors[] = 'Una de las inscripciones no pertenece a este deportista.';
+                continue;
+            }
+            if (!isset($modalidadesMap[$inscripcion['modalidad_id']])) {
+                $errors[] = 'Debes seleccionar una modalidad valida para cada inscripcion.';
+            }
+            $start = DateTime::createFromFormat('!Y-m-d', $inscripcion['fecha_inicio']);
+            if ($inscripcion['fecha_inicio'] === '' || $start === false || $start->format('Y-m-d') !== $inscripcion['fecha_inicio']) {
+                $errors[] = 'Cada inscripcion debe tener una fecha de inicio valida.';
+            }
+            if ($inscripcion['fecha_fin'] !== '') {
+                $end = DateTime::createFromFormat('!Y-m-d', $inscripcion['fecha_fin']);
+                if ($end === false || $end->format('Y-m-d') !== $inscripcion['fecha_fin']) {
+                    $errors[] = 'La fecha de fin de una inscripcion no es valida.';
+                } elseif ($start !== false && $end < $start) {
+                    $errors[] = 'La fecha de fin no puede ser anterior a la fecha de inicio.';
+                }
+            }
         }
 
         $competenciaAssignmentsForForm = [];
@@ -406,6 +458,7 @@ if ($page === 'deportistas') {
                 }
 
                 deportista_modalidades_competencia_sync((int) $deportistaId, $competenciaAssignmentsForForm);
+                inscripciones_sync_por_deportista((int) $deportistaId, $inscripciones);
                 $pdo->commit();
 
                 if ($avatarPathToDelete !== null) {
@@ -459,6 +512,8 @@ if ($page === 'deportistas') {
             'competencia_assignments' => !empty($competenciaAssignmentsForForm)
                 ? $competenciaAssignmentsForForm
                 : ($competenciaAssignments ?: [$blankCompetenciaAssignment]),
+            'inscripciones' => $inscripciones,
+            'modalidades' => $modalidades,
             'deportista' => array_merge(['id' => $submittedId], $form),
         ]);
         exit;
@@ -477,6 +532,8 @@ if ($page === 'deportistas') {
             'sugerencias_competencia' => $buildSugerencias(['fecha_nacimiento' => '']),
             'competencia_schema_ready' => $competenciaSchemaReady,
             'competencia_assignments' => [$blankCompetenciaAssignment],
+            'inscripciones' => [],
+            'modalidades' => modalidades_options(),
             'deportista' => [
                 'id' => 0,
                 'apoderado_id' => 0,
@@ -516,6 +573,8 @@ if ($page === 'deportistas') {
             'sugerencias_competencia' => $buildSugerencias($deportista),
             'competencia_schema_ready' => $competenciaSchemaReady,
             'competencia_assignments' => !empty($competenciaAssignments) ? $competenciaAssignments : [$blankCompetenciaAssignment],
+            'inscripciones' => inscripciones_por_deportista($id),
+            'modalidades' => modalidades_options(),
             'deportista' => $deportista,
         ]);
         exit;
