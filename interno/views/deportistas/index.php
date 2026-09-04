@@ -1,6 +1,7 @@
 <?php
 /** @var array $deportistas */
 /** @var string|null $flash */
+/** @var string $search */
 
 $avatarPalettes = [
     ['start' => '#1f5fe0', 'end' => '#153a8a'],
@@ -52,9 +53,31 @@ $avatarInitials = static function (string $name): string {
         <div class="alert">Deportista eliminado.</div>
     <?php endif; ?>
 
+    <form class="deportistas-search" method="get" action="<?= e(base_url('/')) ?>" role="search">
+        <input type="hidden" name="page" value="deportistas">
+        <label class="sr-only" for="deportistas-search-input">Buscar deportista</label>
+        <span class="material-symbols-outlined deportistas-search-icon" aria-hidden="true">search</span>
+        <input
+            id="deportistas-search-input"
+            type="search"
+            name="q"
+            value="<?= e($search) ?>"
+            placeholder="Buscar por nombre o RUT"
+            autocomplete="off"
+        >
+        <?php if ($search !== ''): ?>
+            <a class="deportistas-search-clear" href="<?= e(base_url('/?page=deportistas')) ?>">Limpiar</a>
+        <?php endif; ?>
+        <button class="button" type="submit">Buscar</button>
+    </form>
+
     <?php if (empty($deportistas)): ?>
         <div class="deportistas-empty">
-            <p>No hay deportistas registrados todavia.</p>
+            <?php if ($search !== ''): ?>
+                <p>No encontramos deportistas para "<?= e($search) ?>".</p>
+            <?php else: ?>
+                <p>No hay deportistas registrados todavia.</p>
+            <?php endif; ?>
         </div>
     <?php else: ?>
         <div class="deportistas-grid">

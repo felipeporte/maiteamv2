@@ -111,6 +111,7 @@ $page = $_GET['page'] ?? 'home';
 if ($page === 'deportistas') {
     $action = $_GET['action'] ?? 'list';
     $flash = $_GET['flash'] ?? null;
+    $search = trim((string) ($_GET['q'] ?? ''));
     $modalidadesCompetencia = modalidades_competencia_all();
     $modalidadesCompetenciaMap = [];
     $modalidadNoCompiteId = 0;

@@ -2,9 +2,10 @@
 
 declare(strict_types=1);
 
-function deportistas_all(): array
+function deportistas_all(string $search = ''): array
 {
-    $stmt = db()->query(
+    $search = trim($search);
+    $sql =
         'SELECT d.id, d.nombre, d.rut, d.avatar_path, d.fecha_nacimiento, d.categoria, d.nivel_id, d.activo, '
         . 'CASE '
         . '    WHEN d.fecha_nacimiento IS NULL THEN NULL '
@@ -22,8 +23,20 @@ function deportistas_all(): array
         . '    INNER JOIN modalidades_competencia mc ON mc.id = dmc.modalidad_competencia_id '
         . '    GROUP BY dmc.deportista_id'
         . ') dm ON dm.deportista_id = d.id '
-        . 'ORDER BY d.nombre'
-    );
+        . 'ORDER BY d.nombre';
+
+    if ($search !== '') {
+        $sql = str_replace('ORDER BY d.nombre', 'WHERE d.nombre LIKE :search_name OR d.rut LIKE :search_rut ORDER BY d.nombre', $sql);
+        $stmt = db()->prepare($sql);
+        $likeSearch = '%' . $search . '%';
+        $stmt->execute([
+            'search_name' => $likeSearch,
+            'search_rut' => $likeSearch,
+        ]);
+    } else {
+        $stmt = db()->query($sql);
+    }
+
     return $stmt->fetchAll();
 }
 
