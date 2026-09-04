@@ -526,7 +526,8 @@ if ($page === 'deportistas') {
         'title' => 'Deportistas - Club MaiTeam',
         'page' => $page,
         'flash' => $flash,
-        'deportistas' => deportistas_all(),
+        'search' => $search,
+        'deportistas' => deportistas_all($search),
     ]);
     exit;
 }
