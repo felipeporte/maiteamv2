@@ -13,6 +13,8 @@ $navSections = [
         ['key' => 'deportistas', 'label' => 'Deportistas', 'icon' => 'user-check'],
         ['key' => 'coaches', 'label' => 'Coaches', 'icon' => 'users-gear'],
         ['key' => 'clases', 'label' => 'Clases', 'icon' => 'calendar'],
+        ['key' => 'particulares', 'label' => 'Particulares', 'icon' => 'calendar'],
+        ['key' => 'particulares-admin', 'label' => 'Config. particulares', 'icon' => 'settings'],
         ['key' => 'asistencia', 'label' => 'Asistencia', 'icon' => 'checklist'],
     ],
     'Operación' => [
@@ -48,6 +50,7 @@ $navIcons = [
     'arrows' => 'swap_horiz',
     'chart' => 'query_stats',
     'spark' => 'event',
+    'settings' => 'settings',
 ];
 
 $renderIcon = static function (string $key) use ($navIcons): string {

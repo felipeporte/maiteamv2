@@ -10,6 +10,29 @@ require __DIR__ . '/src/bootstrap.php';
 
 $page = $_GET['page'] ?? 'home';
 
+if ($page === 'particulares') {
+    $fecha = preg_match('/^\d{4}-\d{2}-\d{2}$/', (string)($_GET['fecha'] ?? '')) ? (string)$_GET['fecha'] : date('Y-m-d');
+    if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_GET['action'] ?? '') === 'reserve') {
+        try { $id=particulares_reservar((int)($_POST['bloque_id']??0),(int)($_POST['cliente_id']??0),(int)($_POST['deportista_id']??0)); redirect(base_url('/?page=particulares&fecha='.rawurlencode($fecha).'&reserved='.$id)); }
+        catch (Throwable $e) { $error=$e->getMessage(); }
+    }
+    $reservas=db()->query("SELECT r.id,r.estado,r.base_amount,c.nombre cliente,d.nombre deportista,b.fecha,b.inicio,b.fin,m.nombre monitor FROM particular_reservas r JOIN particular_clientes c ON c.id=r.cliente_id JOIN particular_deportistas d ON d.id=r.deportista_id JOIN particular_bloques b ON b.id=r.bloque_id JOIN particular_monitores m ON m.id=b.monitor_id WHERE b.fecha>=CURDATE() AND r.estado NOT IN ('expired','cancelled') ORDER BY b.fecha,b.inicio,m.nombre")->fetchAll();
+    render('particulares/index',['title'=>'Clases particulares - Club MaiTeam','page'=>$page,'fecha'=>$fecha,'agenda'=>particulares_agenda($fecha),'reservas'=>$reservas,'error'=>$error??null]); exit;
+}
+
+if ($page === 'particulares-admin') {
+    if ($_SERVER['REQUEST_METHOD']==='POST' && ($_POST['admin_action']??'')==='validate_transfer') { $id=(int)($_POST['pago_id']??0); if($id>0){$pdo=db();$pdo->beginTransaction();$s=$pdo->prepare("UPDATE particular_pagos SET status='paid',paid_at=NOW(),validado_por=:v,validado_at=NOW() WHERE id=:id AND status='pending'");$s->execute(['id'=>$id,'v'=>'admin']);$pdo->prepare("UPDATE particular_reservas r JOIN particular_pagos p ON p.reserva_id=r.id SET r.estado='confirmed' WHERE p.id=:id AND r.estado='awaiting_payment'")->execute(['id'=>$id]);$pdo->commit();} redirect(base_url('/?page=particulares-admin')); }
+    if ($_SERVER['REQUEST_METHOD']==='POST' && ($_POST['admin_action']??'')==='availability') { $mid=(int)($_POST['monitor_id']??0); $day=(int)($_POST['dia_semana']??6); $from=$_POST['hora_inicio']??'09:00'; $to=$_POST['hora_fin']??'14:00'; if($from<$to){$s=db()->prepare('INSERT INTO particular_disponibilidad(monitor_id,dia_semana,hora_inicio,hora_fin) VALUES(:m,:d,:f,:t)');$s->execute(['m'=>$mid?:null,'d'=>$day,'f'=>$from,'t'=>$to]);} redirect(base_url('/?page=particulares-admin')); }
+    if ($_SERVER['REQUEST_METHOD']==='POST' && ($_POST['admin_action']??'')==='generate') { particulares_generar_bloques($_POST['desde']??date('Y-m-d'),$_POST['hasta']??date('Y-m-d',strtotime('+30 days'))); redirect(base_url('/?page=particulares-admin')); }
+    if ($_SERVER['REQUEST_METHOD']==='POST' && ($_POST['admin_action']??'')==='monitor') { $id=(int)($_POST['id']??0); $nombre=trim((string)($_POST['nombre']??'')); $email=trim((string)($_POST['email']??'')); $activo=isset($_POST['activo'])?1:0; if($nombre!==''){ if($id>0){$s=db()->prepare('UPDATE particular_monitores SET nombre=:n,email=:e,activo=:a WHERE id=:id');$s->execute(['n'=>$nombre,'e'=>$email?:null,'a'=>$activo,'id'=>$id]);}else{$s=db()->prepare('INSERT INTO particular_monitores(nombre,email,activo) VALUES(:n,:e,:a)');$s->execute(['n'=>$nombre,'e'=>$email?:null,'a'=>$activo]);}} redirect(base_url('/?page=particulares-admin')); }
+    $cfg = particulares_config();
+    $monitores = db()->query('SELECT * FROM particular_monitores ORDER BY nombre')->fetchAll();
+    $medios = db()->query('SELECT * FROM particular_medios_pago ORDER BY nombre')->fetchAll();
+    $reglas = db()->query('SELECT d.*,m.nombre monitor FROM particular_disponibilidad d LEFT JOIN particular_monitores m ON m.id=d.monitor_id ORDER BY d.dia_semana,d.hora_inicio')->fetchAll();
+    $transferencias = db()->query("SELECT p.id,p.charged_amount,p.status,r.id reserva_id,c.nombre cliente,b.fecha,b.inicio,m.nombre monitor FROM particular_pagos p JOIN particular_reservas r ON r.id=p.reserva_id JOIN particular_clientes c ON c.id=r.cliente_id JOIN particular_bloques b ON b.id=r.bloque_id JOIN particular_monitores m ON m.id=b.monitor_id JOIN particular_medios_pago mp ON mp.id=p.medio_pago_id WHERE mp.codigo='transferencia' ORDER BY p.id DESC LIMIT 50")->fetchAll();
+    render('particulares/admin',['title'=>'Administrar particulares - Club MaiTeam','page'=>$page,'cfg'=>$cfg,'monitores'=>$monitores,'medios'=>$medios,'reglas'=>$reglas,'transferencias'=>$transferencias]); exit;
+}
+
 if ($page === 'socios') {
     $action = $_GET['action'] ?? 'list';
     $flash = $_GET['flash'] ?? null;
@@ -1372,6 +1395,7 @@ if ($page === 'eventos') {
     $action = $_GET['action'] ?? 'list';
     $flash = $_GET['flash'] ?? null;
     $schemaReady = eventos_federados_schema_ready();
+    $hojasSchemaReady = evento_federado_hojas_schema_ready();
     $nivelesEvento = modalidades_competencia_niveles_globales();
     $eventos = eventos_federados_all();
     $blankEvento = [
@@ -1391,8 +1415,12 @@ if ($page === 'eventos') {
     $evento = null;
     $inscripciones = [];
     $deportistasElegibles = [];
+    $hojasElementos = [];
+    $hojaContext = null;
+    $hojaForm = [];
+    $hojaSelectedInscripcionId = 0;
 
-    if ($schemaReady && in_array($action, ['show', 'edit'], true)) {
+    if ($schemaReady && in_array($action, ['show', 'edit', 'hoja', 'hoja-pdf'], true)) {
         $id = (int) ($_GET['id'] ?? 0);
         $evento = $id > 0 ? evento_federado_find($id) : null;
         if ($evento === null) {
@@ -1405,6 +1433,22 @@ if ($page === 'eventos') {
         $eventoForm = array_merge($blankEvento, $evento);
         $inscripciones = evento_federado_inscripciones_all((int) $evento['id']);
         $deportistasElegibles = evento_federado_deportistas_elegibles($evento);
+        $hojasElementos = $hojasSchemaReady ? evento_federado_hojas_all((int) $evento['id']) : [];
+        $hojaSelectedInscripcionId = (int) ($_GET['inscripcion_id'] ?? 0);
+        if ($hojaSelectedInscripcionId <= 0) {
+            if (!empty($hojasElementos)) {
+                $hojaSelectedInscripcionId = (int) ($hojasElementos[0]['inscripcion_id'] ?? 0);
+            } elseif (!empty($inscripciones)) {
+                $hojaSelectedInscripcionId = (int) ($inscripciones[0]['id'] ?? 0);
+            }
+        }
+
+        if ($hojasSchemaReady && $hojaSelectedInscripcionId > 0) {
+            $hojaContext = evento_federado_hoja_context_find((int) $evento['id'], $hojaSelectedInscripcionId);
+            if ($hojaContext !== null) {
+                $hojaForm = evento_federado_hoja_form_data($hojaContext);
+            }
+        }
     }
 
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -1432,7 +1476,57 @@ if ($page === 'eventos') {
                 redirect(base_url('/?page=eventos&flash=deleted'));
             }
 
-            if ($postAction === 'inscribir') {
+            if ($postAction === 'hoja-save') {
+                $hojaEventoId = (int) ($_POST['evento_id'] ?? 0);
+                $hojaInscripcionId = (int) ($_POST['inscripcion_id'] ?? 0);
+                $hojaSubmit = trim((string) ($_POST['hoja_submit'] ?? 'save'));
+                $hojaFormData = [
+                    'plantilla_codigo' => trim((string) ($_POST['plantilla_codigo'] ?? '')),
+                    'competidor_nombre' => trim((string) ($_POST['competidor_nombre'] ?? '')),
+                    'categoria_label' => trim((string) ($_POST['categoria_label'] ?? '')),
+                    'club' => trim((string) ($_POST['club'] ?? '')),
+                    'representing' => trim((string) ($_POST['representing'] ?? '')),
+                    'choreography' => trim((string) ($_POST['choreography'] ?? '')),
+                    'observaciones' => trim((string) ($_POST['observaciones_hoja'] ?? '')),
+                    'rows' => (array) ($_POST['rows'] ?? []),
+                ];
+
+                if (!$hojasSchemaReady) {
+                    $errors[] = 'Falta aplicar la migracion de hojas de elementos en esta base de datos.';
+                } elseif ($hojaEventoId <= 0) {
+                    $errors[] = 'No se encontro el evento.';
+                } elseif ($hojaInscripcionId <= 0) {
+                    $errors[] = 'Debes seleccionar una inscripcion valida.';
+                } else {
+                    try {
+                        evento_federado_hoja_save($hojaEventoId, $hojaInscripcionId, $hojaFormData);
+                        $hojaContext = evento_federado_hoja_context_find($hojaEventoId, $hojaInscripcionId);
+                        if ($hojaContext !== null) {
+                            $hojaForm = evento_federado_hoja_form_data($hojaContext);
+                        }
+
+                        if ($hojaSubmit === 'download' && $hojaContext !== null) {
+                            evento_federado_hoja_emitir_pdf($hojaForm);
+                        }
+
+                        redirect(base_url('/?page=eventos&action=hoja&id=' . $hojaEventoId . '&inscripcion_id=' . $hojaInscripcionId . '&flash=sheet-updated'));
+                    } catch (Throwable $e) {
+                        $errors[] = $e->getMessage() !== '' ? $e->getMessage() : 'No se pudo guardar la hoja de elementos.';
+                        $hojaContext = evento_federado_hoja_context_find($hojaEventoId, $hojaInscripcionId);
+                        if ($hojaContext !== null) {
+                            $hojaForm = evento_federado_hoja_form_data($hojaContext);
+                            $hojaForm['plantilla_codigo'] = $hojaFormData['plantilla_codigo'] !== '' ? $hojaFormData['plantilla_codigo'] : $hojaForm['plantilla_codigo'];
+                            $hojaForm['competidor_nombre'] = $hojaFormData['competidor_nombre'] !== '' ? $hojaFormData['competidor_nombre'] : $hojaForm['competidor_nombre'];
+                            $hojaForm['categoria_label'] = $hojaFormData['categoria_label'] !== '' ? $hojaFormData['categoria_label'] : $hojaForm['categoria_label'];
+                            $hojaForm['club'] = $hojaFormData['club'] !== '' ? $hojaFormData['club'] : $hojaForm['club'];
+                            $hojaForm['representing'] = $hojaFormData['representing'] !== '' ? $hojaFormData['representing'] : $hojaForm['representing'];
+                            $hojaForm['choreography'] = $hojaFormData['choreography'] !== '' ? $hojaFormData['choreography'] : $hojaForm['choreography'];
+                            $hojaForm['observaciones'] = $hojaFormData['observaciones'] !== '' ? $hojaFormData['observaciones'] : $hojaForm['observaciones'];
+                            $hojaForm['rows'] = evento_federado_hoja_pad_rows(evento_federado_hoja_filter_rows($hojaFormData['rows']), $hojaForm['plantilla_codigo']);
+                        }
+                    }
+                }
+            } elseif ($postAction === 'inscribir') {
                 $inscripcionDeportistaId = (int) ($_POST['deportista_id'] ?? 0);
                 $inscripcionData = [
                     'deportista_modalidades_competencia_id' => (int) ($_POST['deportista_modalidades_competencia_id'] ?? 0),
@@ -1461,6 +1555,7 @@ if ($page === 'eventos') {
                     $eventoForm = array_merge($blankEvento, $evento);
                     $inscripciones = evento_federado_inscripciones_all((int) $evento['id']);
                     $deportistasElegibles = evento_federado_deportistas_elegibles($evento);
+                    $hojasElementos = $hojasSchemaReady ? evento_federado_hojas_all((int) $evento['id']) : [];
                 }
             } else {
                 if ($form['nombre'] === '') {
@@ -1506,10 +1601,35 @@ if ($page === 'eventos') {
                     if ($evento !== null) {
                         $inscripciones = evento_federado_inscripciones_all((int) $evento['id']);
                         $deportistasElegibles = evento_federado_deportistas_elegibles($evento);
+                        $hojasElementos = $hojasSchemaReady ? evento_federado_hojas_all((int) $evento['id']) : [];
                     }
                 }
             }
         }
+    }
+
+    if ($schemaReady && $action === 'hoja-pdf' && $evento !== null) {
+        if (!$hojasSchemaReady) {
+            render('404', [
+                'title' => page_title('404'),
+                'page' => $page,
+            ]);
+            exit;
+        }
+
+        if ($hojaForm === [] && $hojaContext !== null) {
+            $hojaForm = evento_federado_hoja_form_data($hojaContext);
+        }
+
+        if ($hojaForm === []) {
+            render('404', [
+                'title' => page_title('404'),
+                'page' => $page,
+            ]);
+            exit;
+        }
+
+        evento_federado_hoja_emitir_pdf($hojaForm);
     }
 
     $view = 'eventos';
@@ -1525,6 +1645,11 @@ if ($page === 'eventos') {
         'evento_form' => $eventoForm,
         'inscripciones' => $inscripciones,
         'deportistas_elegibles' => $deportistasElegibles,
+        'hojas_elementos' => $hojasElementos,
+        'hojas_schema_ready' => $hojasSchemaReady,
+        'hoja_context' => $hojaContext,
+        'hoja_form' => $hojaForm,
+        'hoja_selected_inscripcion_id' => $hojaSelectedInscripcionId,
         'niveles_evento' => $nivelesEvento,
     ]);
     exit;

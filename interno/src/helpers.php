@@ -212,6 +212,7 @@ function page_title(string $view): string
         'certificados' => 'Certificados - Club MaiTeam',
         'pagos' => 'Pagos - Club MaiTeam',
         'transferencias' => 'Transferencias coaches - Club MaiTeam',
+        'particulares' => 'Clases particulares - Club MaiTeam',
         '404' => 'No encontrado - Club MaiTeam',
     ];
 
