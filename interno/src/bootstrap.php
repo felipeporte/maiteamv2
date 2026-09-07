@@ -19,7 +19,6 @@ require __DIR__ . '/reportes.php';
 require __DIR__ . '/competencias.php';
 require __DIR__ . '/eventos.php';
 require __DIR__ . '/certificados.php';
-require __DIR__ . '/hojas_elementos.php';
 require __DIR__ . '/particulares.php';
 
 $baseConfig = require __DIR__ . '/../config/app.php';
