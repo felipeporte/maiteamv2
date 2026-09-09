@@ -8,9 +8,22 @@ $action = $_GET['action'] ?? 'search';
 $rut = format_rut($_POST['rut'] ?? $_GET['rut'] ?? '');
 $errors = [];
 $deportista = null;
-$competencias = [];
+$eventosFederados = [];
 
-if ($action === 'pdf') {
+if ($action === 'preview') {
+    $inscripcionId = (int) ($_GET['inscripcion_id'] ?? 0);
+    $eventosFederados = certificados_eventos_federados_por_rut($rut);
+    foreach ($eventosFederados as $evento) {
+        if ((int) ($evento['inscripcion_id'] ?? 0) === $inscripcionId) {
+            header('Content-Type: text/html; charset=UTF-8');
+            echo certificado_evento_federado_render_html($evento);
+            exit;
+        }
+    }
+    http_response_code(404);
+    echo 'Certificado no encontrado.';
+    exit;
+} elseif ($action === 'pdf') {
     if ($rut === '') {
         $errors[] = 'Debes ingresar un RUT.';
     } elseif (!is_valid_rut($rut)) {
@@ -27,16 +40,20 @@ if ($action === 'pdf') {
 
         if ($type === 'permanencia') {
             certificado_emitir_permanencia_pdf($deportista);
-        } elseif ($type === 'competencia') {
-            $competenciaId = (int) ($_GET['competencia_id'] ?? 0);
-            $competencia = $competenciaId > 0
-                ? competencia_find_por_deportista($competenciaId, (int) $deportista['id'])
-                : null;
-
-            if ($competencia === null) {
-                $errors[] = 'La competencia seleccionada no esta disponible para este deportista.';
+        } elseif ($type === 'evento-federado') {
+            $inscripcionId = (int) ($_GET['inscripcion_id'] ?? 0);
+            $eventosFederados = certificados_eventos_federados_por_rut($rut);
+            $inscripcion = null;
+            foreach ($eventosFederados as $evento) {
+                if ((int) ($evento['inscripcion_id'] ?? 0) === $inscripcionId) {
+                    $inscripcion = $evento;
+                    break;
+                }
+            }
+            if ($inscripcion === null) {
+                $errors[] = 'El evento federado seleccionado no esta disponible para este deportista.';
             } else {
-                certificado_emitir_competencia_pdf($deportista, $competencia);
+                certificado_emitir_evento_federado_pdf($inscripcion);
             }
         } else {
             $errors[] = 'Tipo de certificado no soportado.';
@@ -52,13 +69,13 @@ if ($action === 'pdf') {
         if ($deportista === null) {
             $errors[] = 'No encontramos un deportista asociado a ese RUT.';
         } else {
-            $competencias = competencias_por_deportista((int) $deportista['id']);
+            $eventosFederados = certificados_eventos_federados_por_rut($rut);
         }
     }
 }
 
-if ($deportista !== null && empty($competencias)) {
-    $competencias = competencias_por_deportista((int) $deportista['id']);
+if ($deportista !== null && empty($eventosFederados)) {
+    $eventosFederados = certificados_eventos_federados_por_rut($rut);
 }
 ?>
 <!doctype html>
@@ -117,25 +134,25 @@ if ($deportista !== null && empty($competencias)) {
                 </a>
 
                 <div class="competencias-head">
-                    <h3>Justificativo de competencia por nivel</h3>
-                    <p>Disponible cuando hay competencias registradas para el nivel del deportista.</p>
+                    <h3>Certificados de eventos federados</h3>
+                    <p>Disponibles para los eventos en que la deportista tiene una inscripción vigente.</p>
                 </div>
 
-                <?php if (empty($competencias)): ?>
-                    <p class="muted">No hay competencias registradas para el nivel de este deportista.</p>
+                <?php if (empty($eventosFederados)): ?>
+                    <p class="muted">No hay inscripciones en eventos federados disponibles.</p>
                 <?php else: ?>
                     <div class="competition-list">
-                        <?php foreach ($competencias as $competencia): ?>
+                        <?php foreach ($eventosFederados as $eventoFederado): ?>
                             <article class="competition-item">
                                 <div>
-                                    <h4><?= e($competencia['nombre']) ?></h4>
-                                    <p><?= e(certificado_texto_fechas_competencia($competencia)) ?></p>
-                                    <?php if (!empty($competencia['lugar'])): ?>
-                                        <p class="place">Lugar: <?= e($competencia['lugar']) ?></p>
+                                    <h4><?= e($eventoFederado['evento_nombre']) ?></h4>
+                                    <p><?= e(certificado_texto_fechas_competencia($eventoFederado)) ?></p>
+                                    <?php if (!empty($eventoFederado['lugar'])): ?>
+                                        <p class="place">Lugar: <?= e($eventoFederado['lugar']) ?></p>
                                     <?php endif; ?>
                                 </div>
-                                <a class="download" href="/certificados/?action=pdf&type=competencia&rut=<?= urlencode((string) ($deportista['rut'] ?? '')) ?>&competencia_id=<?= (int) $competencia['id'] ?>">
-                                    Descargar PDF
+                                <a class="download" href="/certificados/?action=pdf&type=evento-federado&rut=<?= urlencode((string) ($deportista['rut'] ?? '')) ?>&inscripcion_id=<?= (int) $eventoFederado['inscripcion_id'] ?>">
+                                    Descargar certificado
                                 </a>
                             </article>
                         <?php endforeach; ?>

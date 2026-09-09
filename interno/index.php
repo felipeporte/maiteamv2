@@ -1780,7 +1780,7 @@ if ($page === 'certificados') {
     $rut = format_rut($_POST['rut'] ?? $_GET['rut'] ?? '');
     $errors = [];
     $deportista = null;
-    $competencias = [];
+    $eventosFederados = [];
 
     if ($action === 'pdf') {
         if ($rut === '') {
@@ -1799,16 +1799,20 @@ if ($page === 'certificados') {
 
             if ($type === 'permanencia') {
                 certificado_emitir_permanencia_pdf($deportista);
-            } elseif ($type === 'competencia') {
-                $competenciaId = (int) ($_GET['competencia_id'] ?? 0);
-                $competencia = $competenciaId > 0
-                    ? competencia_find_por_deportista($competenciaId, (int) $deportista['id'])
-                    : null;
-
-                if ($competencia === null) {
-                    $errors[] = 'No se encontro la competencia solicitada para este deportista.';
+            } elseif ($type === 'evento-federado') {
+                $inscripcionId = (int) ($_GET['inscripcion_id'] ?? 0);
+                $eventosFederados = certificados_eventos_federados_por_rut($rut);
+                $inscripcion = null;
+                foreach ($eventosFederados as $evento) {
+                    if ((int) ($evento['inscripcion_id'] ?? 0) === $inscripcionId) {
+                        $inscripcion = $evento;
+                        break;
+                    }
+                }
+                if ($inscripcion === null) {
+                    $errors[] = 'No se encontro la inscripcion federada solicitada.';
                 } else {
-                    certificado_emitir_competencia_pdf($deportista, $competencia);
+                    certificado_emitir_evento_federado_pdf($inscripcion);
                 }
             } else {
                 $errors[] = 'Tipo de certificado no soportado.';
@@ -1824,13 +1828,13 @@ if ($page === 'certificados') {
             if ($deportista === null) {
                 $errors[] = 'No existe un deportista asociado a ese RUT.';
             } else {
-                $competencias = competencias_por_deportista((int) $deportista['id']);
+                $eventosFederados = certificados_eventos_federados_por_rut($rut);
             }
         }
     }
 
-    if ($deportista !== null && empty($competencias)) {
-        $competencias = competencias_por_deportista((int) $deportista['id']);
+    if ($deportista !== null && empty($eventosFederados)) {
+        $eventosFederados = certificados_eventos_federados_por_rut($rut);
     }
 
     $view = 'certificados/index';
@@ -1840,7 +1844,7 @@ if ($page === 'certificados') {
         'rut' => $rut,
         'errors' => $errors,
         'deportista' => $deportista,
-        'competencias' => $competencias,
+        'eventos_federados' => $eventosFederados,
     ]);
     exit;
 }

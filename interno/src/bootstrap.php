@@ -2,6 +2,10 @@
 
 declare(strict_types=1);
 
+if (is_file(dirname(__DIR__, 2) . '/vendor/autoload.php')) {
+    require_once dirname(__DIR__, 2) . '/vendor/autoload.php';
+}
+
 require __DIR__ . '/helpers.php';
 load_env_file(dirname(__DIR__, 2) . '/.env');
 require __DIR__ . '/apoderados.php';

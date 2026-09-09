@@ -2,7 +2,7 @@
 /** @var string $rut */
 /** @var array $errors */
 /** @var array|null $deportista */
-/** @var array $competencias */
+/** @var array $eventos_federados */
 ?>
 <section class="page">
     <div class="page-header">
@@ -44,20 +44,20 @@
                 </a>
             </div>
 
-            <?php if (empty($competencias)): ?>
-                <p class="muted">No hay competencias registradas para el nivel de este deportista, por lo que no se puede emitir justificativo de competencia.</p>
+            <?php if (empty($eventos_federados)): ?>
+                <p class="muted">No hay inscripciones en eventos federados disponibles.</p>
             <?php else: ?>
-                <h2>Justificativos de competencia por nivel</h2>
+                <h2>Certificados de eventos federados</h2>
                 <div class="class-list">
-                    <?php foreach ($competencias as $competencia): ?>
+                    <?php foreach ($eventos_federados as $evento_federado): ?>
                         <div>
                             <p class="class-list-title">
-                                <?= e($competencia['nombre']) ?>
-                                (<?= e(certificado_texto_fechas_competencia($competencia)) ?>)
-                                <?= !empty($competencia['lugar']) ? ' - ' . e($competencia['lugar']) : '' ?>
+                                <?= e($evento_federado['evento_nombre']) ?>
+                                (<?= e(certificado_texto_fechas_competencia($evento_federado)) ?>)
+                                <?= !empty($evento_federado['lugar']) ? ' - ' . e($evento_federado['lugar']) : '' ?>
                             </p>
-                            <a class="button ghost" href="<?= e(base_url('/?page=certificados&action=pdf&type=competencia&rut=' . urlencode((string) $deportista['rut']) . '&competencia_id=' . (int) $competencia['id'])) ?>">
-                                Descargar justificativo PDF
+                            <a class="button ghost" href="<?= e(base_url('/?page=certificados&action=pdf&type=evento-federado&rut=' . urlencode((string) $deportista['rut']) . '&inscripcion_id=' . (int) $evento_federado['inscripcion_id'])) ?>">
+                                Descargar certificado PDF
                             </a>
                         </div>
                     <?php endforeach; ?>

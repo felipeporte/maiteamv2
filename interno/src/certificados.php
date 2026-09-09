@@ -24,6 +24,72 @@ function deportista_por_rut(string $rut): ?array
     return $row ?: null;
 }
 
+function certificados_eventos_federados_por_rut(string $rut): array
+{
+    if (!eventos_federados_schema_ready()) {
+        return [];
+    }
+
+    $normalizedRut = normalize_rut($rut);
+    if ($normalizedRut === '') {
+        return [];
+    }
+
+    $stmt = db()->prepare(
+        'SELECT ei.id AS inscripcion_id, ei.estado_pago, '
+        . 'e.id AS evento_id, e.nombre AS evento_nombre, e.nivel AS evento_nivel, '
+        . 'e.fecha_inicio, e.fecha_fin, e.lugar, e.estado AS evento_estado, '
+        . 'd.id AS deportista_id, d.nombre AS deportista_nombre, d.rut, '
+        . 'ei.modalidad_competencia_id, ei.subnivel, ei.categoria, '
+        . 'mc.nombre AS modalidad_nombre, mc.codigo AS modalidad_codigo '
+        . 'FROM evento_federado_inscripciones ei '
+        . 'INNER JOIN eventos_federados e ON e.id = ei.evento_id '
+        . 'INNER JOIN deportistas d ON d.id = ei.deportista_id '
+        . 'LEFT JOIN modalidades_competencia mc ON mc.id = ei.modalidad_competencia_id '
+        . 'WHERE REPLACE(REPLACE(UPPER(d.rut), ".", ""), "-", "") = :rut '
+        . 'AND ei.estado_pago <> "anulado" '
+        . 'AND e.estado <> "borrador" '
+        . 'ORDER BY e.fecha_inicio DESC, e.id DESC, ei.id DESC'
+    );
+    $stmt->execute(['rut' => $normalizedRut]);
+
+    return $stmt->fetchAll();
+}
+
+function certificado_emitir_evento_federado_pdf(array $inscripcion): void
+{
+    if (!class_exists('Dompdf\\Dompdf')) {
+        throw new RuntimeException('Dompdf no esta instalado. Ejecuta composer install.');
+    }
+
+    $html = certificado_evento_federado_render_html($inscripcion);
+
+    $options = new \Dompdf\Options();
+    $options->set('isRemoteEnabled', false);
+    $options->set('defaultFont', 'DejaVu Sans');
+    $options->setChroot(dirname(__DIR__, 2));
+
+    $dompdf = new \Dompdf\Dompdf($options);
+    $dompdf->loadHtml($html, 'UTF-8');
+    $dompdf->setPaper('letter', 'portrait');
+    $dompdf->render();
+
+    $filename = 'certificado-competencia-' . certificado_slug((string) ($inscripcion['deportista_nombre'] ?? 'deportista'))
+        . '-' . certificado_slug((string) ($inscripcion['evento_nombre'] ?? 'evento')) . '.pdf';
+    $dompdf->stream($filename, ['Attachment' => true]);
+    exit;
+}
+
+function certificado_evento_federado_render_html(array $inscripcion): string
+{
+    $templatePath = __DIR__ . '/../views/certificados/evento-federado-pdf.php';
+    ob_start();
+    $logoPath = dirname(__DIR__) . '/assets/img/Logo principal.png';
+    require $templatePath;
+
+    return (string) ob_get_clean();
+}
+
 function certificado_emitir_permanencia_pdf(array $deportista): void
 {
     $nombre = (string) ($deportista['nombre'] ?? '');
