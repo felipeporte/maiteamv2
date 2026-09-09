@@ -392,6 +392,9 @@ CREATE TABLE IF NOT EXISTS `eventos_federados` (
   `fecha_fin` date DEFAULT NULL,
   `lugar` varchar(160) DEFAULT NULL,
   `costo_inscripcion` decimal(10,2) NOT NULL DEFAULT 0.00,
+  `tarifa_una_modalidad` decimal(10,2) NOT NULL DEFAULT 38000.00,
+  `tarifa_dos_modalidades` decimal(10,2) NOT NULL DEFAULT 53000.00,
+  `tarifa_acompanamiento_pista` decimal(10,2) NOT NULL DEFAULT 40000.00,
   `cupo` smallint(5) unsigned DEFAULT NULL,
   `estado` enum('borrador','abierto','cerrado','finalizado') NOT NULL DEFAULT 'borrador',
   `observaciones` varchar(255) DEFAULT NULL,
@@ -437,4 +440,24 @@ CREATE TABLE IF NOT EXISTS `evento_federado_inscripciones` (
   CONSTRAINT `fk_evento_federado_inscripciones_apoderado`
     FOREIGN KEY (`apoderado_id`) REFERENCES `apoderados` (`id`)
     ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `evento_federado_cobros` (
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `evento_id` int(10) unsigned NOT NULL,
+  `deportista_id` int(10) unsigned NOT NULL,
+  `tipo_cobro` enum('inscripcion','acompanamiento') NOT NULL,
+  `monto` decimal(10,2) NOT NULL DEFAULT 0.00,
+  `estado_pago` enum('pendiente','pagado','anulado') NOT NULL DEFAULT 'pendiente',
+  `metodo_pago` varchar(40) DEFAULT NULL,
+  `referencia` varchar(120) DEFAULT NULL,
+  `pagado_at` datetime DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_evento_federado_cobro_tipo` (`evento_id`,`deportista_id`,`tipo_cobro`),
+  KEY `idx_evento_federado_cobros_evento` (`evento_id`),
+  KEY `idx_evento_federado_cobros_estado` (`estado_pago`),
+  CONSTRAINT `fk_evento_federado_cobros_evento` FOREIGN KEY (`evento_id`) REFERENCES `eventos_federados` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT `fk_evento_federado_cobros_deportista` FOREIGN KEY (`deportista_id`) REFERENCES `deportistas` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

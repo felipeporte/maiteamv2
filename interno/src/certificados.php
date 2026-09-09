@@ -384,7 +384,12 @@ function certificado_pdf_comandos_documento(array $document, array $assets = [])
     return $commands;
 }
 
-function certificado_construir_documento_pdf(string $stream, array $assets = []): string
+function certificado_construir_documento_pdf(
+    string $stream,
+    array $assets = [],
+    int $pageWidth = 595,
+    int $pageHeight = 842
+): string
 {
     $images = [];
     foreach ($assets as $asset) {
@@ -434,7 +439,7 @@ function certificado_construir_documento_pdf(string $stream, array $assets = [])
     $contentsObjectId = $nextObjectId;
     $objects[$contentsObjectId] = '<< /Length ' . strlen($stream) . " >>\nstream\n" . $stream . 'endstream';
 
-    $objects[3] = '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << ' . $resources
+    $objects[3] = '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ' . $pageWidth . ' ' . $pageHeight . '] /Resources << ' . $resources
         . ' >> /Contents ' . $contentsObjectId . ' 0 R >>';
 
     $pdf = "%PDF-1.4\n";

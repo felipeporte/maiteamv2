@@ -926,13 +926,47 @@ textarea {
 }
 
 .eventos-detail-grid {
-  align-items: stretch;
+  display: block;
 }
 
 .eventos-columns {
   display: grid;
   grid-template-columns: minmax(0, 1.3fr) minmax(0, 0.9fr);
   gap: 18px;
+}
+
+.eventos-inscripciones-section {
+  width: 100%;
+}
+
+.eventos-inscripciones-card {
+  width: 100%;
+}
+
+.eventos-detail-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+.eventos-detail-link .chip {
+  font-size: 0.75rem;
+}
+
+.evento-inscrito-ticket {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  color: #16854a;
+  border-radius: 10px;
+  background: rgba(22, 133, 74, 0.12);
+}
+
+.evento-inscrito-ticket .material-symbols-outlined {
+  font-size: 20px;
 }
 
 .eventos-meta {
@@ -943,10 +977,28 @@ textarea {
   gap: 10px;
 }
 
-.eventos-meta li {
+.eventos-meta span {
   padding: 10px 12px;
   border-radius: 14px;
   background: rgba(229, 123, 180, 0.08);
+}
+
+.eventos-detail-summary {
+  display: grid;
+  gap: 12px;
+}
+
+.eventos-meta-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.eventos-meta-chips span {
+  padding: 8px 12px;
+  border: 1px solid rgba(229, 123, 180, 0.16);
+  border-radius: 999px;
+  font-size: 0.9rem;
 }
 
 .hoja-form {
@@ -1374,6 +1426,10 @@ tbody td {
   padding: 0;
 }
 
+.inline-form {
+  display: inline;
+}
+
 .link:hover {
   text-decoration: underline;
 }
@@ -1399,6 +1455,87 @@ tbody td {
 .chip.muted {
   background: rgba(100, 100, 100, 0.12);
   color: var(--muted);
+}
+
+.eventos-hojas-summary .table-wrapper th,
+.eventos-hojas-summary .table-wrapper td {
+  border-top: 0;
+  border-bottom: 0;
+}
+
+.hojas-resumen-persona {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.hojas-resumen-status {
+  margin-top: 2px;
+  color: #d79b16;
+  font-size: 1.25rem;
+}
+
+.hojas-resumen-status.is-complete {
+  color: #16834b;
+}
+
+.hojas-resumen-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 7px;
+}
+
+.hoja-program-chip.is-saved,
+.chip.is-saved {
+  background: rgba(22, 131, 75, 0.14);
+  color: #126a3e;
+}
+
+.hoja-program-chip.is-pending,
+.chip.is-pending {
+  background: rgba(215, 155, 22, 0.17);
+  color: #8b6200;
+}
+
+.eventos-hojas-summary td:last-child {
+  display: table-cell;
+}
+
+.eventos-hojas-summary td:last-child .link {
+  display: block;
+  margin-bottom: 6px;
+}
+
+.evento-deportista-line {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.evento-inscripcion-form {
+  display: flex;
+  flex: 0 0 auto;
+  margin: 0;
+}
+
+.evento-inscripcion-status {
+  margin-top: 1px;
+  color: #d79b16;
+  font-size: 1.2rem;
+}
+
+.evento-inscripcion-status.is-registered {
+  color: #16834b;
+}
+
+.evento-inscripcion-action {
+  color: #b17a00;
+}
+
+.evento-inscripcion-action:hover {
+  color: #8b6200;
+  background: rgba(215, 155, 22, 0.14);
 }
 
 .form {
@@ -2056,7 +2193,8 @@ tbody td {
   gap: 14px;
   align-items: center;
   padding: 14px 18px;
-  background: rgba(21, 101, 192, 0.08);
+  background: linear-gradient(135deg, #0d3f68 0%, #145b8f 100%);
+  color: #fff;
 }
 
 .sheet-subbanner-copy,
@@ -2071,7 +2209,7 @@ tbody td {
 
 .sheet-subbanner-copy span,
 .sheet-subbanner-meta span {
-  color: var(--muted);
+  color: rgba(255, 255, 255, 0.86);
   font-weight: 700;
 }
 
@@ -2171,6 +2309,75 @@ tbody td {
   padding: 10px 12px;
 }
 
+.hoja-nacional-page .sheet-banner {
+  background: #fff;
+  color: #1e293b;
+  border-color: #b9c7d6;
+  box-shadow: none;
+}
+
+.hoja-solo-dance-page .sheet-banner {
+  background: linear-gradient(135deg, #27766a 0%, #2e8d7e 58%, #55aa9d 100%);
+  border-color: #27766a;
+}
+
+.hoja-solo-dance-page .sheet-subbanner {
+  background: linear-gradient(135deg, #1d5f56 0%, #27766a 100%);
+  border-color: #27766a;
+}
+
+.hoja-solo-dance-page .sheet-form-card,
+.hoja-solo-dance-page .sheet-observations {
+  border-color: #9fc2bb;
+}
+
+.hoja-solo-dance-page .sheet-rows {
+  border-color: #9fc2bb;
+}
+
+.hoja-solo-dance-page .el-row {
+  border-color: rgba(39, 118, 106, 0.2);
+}
+
+.hoja-solo-dance-page .el-row.even {
+  background: rgba(46, 141, 126, 0.05);
+}
+
+.hoja-nacional-page .sheet-banner .kicker,
+.hoja-nacional-page .sheet-banner h1,
+.hoja-nacional-page .sheet-banner p:last-child {
+  color: #1e293b;
+}
+
+.hoja-nacional-page .sheet-subbanner {
+  background: #dce8f3;
+  color: #1e293b;
+  border-color: #9fb4c8;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.hoja-nacional-page .sheet-subbanner-copy span,
+.hoja-nacional-page .sheet-subbanner-meta span {
+  color: #1e293b;
+}
+
+.hoja-nacional-page .sheet-form-card,
+.hoja-nacional-page .sheet-observations {
+  border-color: #9fb4c8;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.hoja-nacional-page .el-row {
+  grid-template-columns: 112px 190px minmax(0, 1fr);
+}
+
+.hoja-nacional-page .el-num[hidden],
+.hoja-nacional-page .national-row input[hidden] {
+  display: none;
+}
+
 .el-row .input {
   box-shadow: none;
 }
@@ -2210,6 +2417,10 @@ tbody td {
 
   .el-row {
     grid-template-columns: 46px 74px minmax(0, 1fr);
+  }
+
+  .hoja-nacional-page .el-row {
+    grid-template-columns: 96px 150px minmax(0, 1fr);
   }
 
   .el-row .input:nth-child(4),

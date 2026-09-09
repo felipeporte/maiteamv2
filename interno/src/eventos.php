@@ -2,6 +2,33 @@
 
 declare(strict_types=1);
 
+function eventos_federados_tarifas_predeterminadas(): array
+{
+    return [
+        'tarifa_una_modalidad' => 38000.00,
+        'tarifa_dos_modalidades' => 53000.00,
+        'tarifa_acompanamiento_pista' => 40000.00,
+    ];
+}
+
+function evento_federado_tarifa_total(array $evento, int $modalidades): float
+{
+    if ($modalidades <= 1) {
+        return (float) ($evento['tarifa_una_modalidad'] ?? $evento['costo_inscripcion'] ?? 0);
+    }
+
+    return (float) ($evento['tarifa_dos_modalidades'] ?? 0);
+}
+
+function evento_federado_monto_por_modalidad(array $evento, int $modalidades): float
+{
+    if ($modalidades <= 0) {
+        return 0.00;
+    }
+
+    return round(evento_federado_tarifa_total($evento, $modalidades) / $modalidades, 2);
+}
+
 function eventos_federados_schema_ready(): bool
 {
     static $ready = null;
@@ -32,6 +59,20 @@ function eventos_federados_schema_ready(): bool
         'SELECT COUNT(*) '
         . 'FROM information_schema.columns '
         . 'WHERE table_schema = DATABASE() '
+        . 'AND table_name = "eventos_federados" '
+        . 'AND column_name IN ("tarifa_una_modalidad", "tarifa_dos_modalidades", "tarifa_acompanamiento_pista")'
+    );
+    $stmt->execute();
+
+    if ((int) $stmt->fetchColumn() !== 3) {
+        $ready = false;
+        return $ready;
+    }
+
+    $stmt = db()->prepare(
+        'SELECT COUNT(*) '
+        . 'FROM information_schema.columns '
+        . 'WHERE table_schema = DATABASE() '
         . 'AND table_name = "evento_federado_inscripciones" '
         . 'AND column_name IN ('
         . '    "deportista_modalidades_competencia_id", '
@@ -54,7 +95,8 @@ function eventos_federados_all(): array
     }
 
     $stmt = db()->query(
-        'SELECT e.id, e.nombre, e.nivel, e.fecha_inicio, e.fecha_fin, e.lugar, e.costo_inscripcion, e.cupo, '
+        'SELECT e.id, e.nombre, e.nivel, e.fecha_inicio, e.fecha_fin, e.lugar, e.costo_inscripcion, '
+        . 'e.tarifa_una_modalidad, e.tarifa_dos_modalidades, e.tarifa_acompanamiento_pista, e.cupo, '
         . 'e.estado, e.observaciones, '
         . 'COALESCE(s.inscritos_count, 0) AS inscritos_count, '
         . 'COALESCE(s.pagados_count, 0) AS pagados_count, '
@@ -63,9 +105,17 @@ function eventos_federados_all(): array
         . 'LEFT JOIN ('
         . '    SELECT evento_id, '
         . '           COUNT(*) AS inscritos_count, '
-        . '           SUM(CASE WHEN estado_pago = "pagado" THEN 1 ELSE 0 END) AS pagados_count, '
-        . '           SUM(CASE WHEN estado_pago <> "anulado" THEN monto ELSE 0 END) AS monto_total '
-        . '    FROM evento_federado_inscripciones '
+        . '           SUM(CASE WHEN pagadas = modalidades_activas THEN 1 ELSE 0 END) AS pagados_count, '
+        . '           SUM(monto_total) AS monto_total '
+        . '    FROM ('
+        . '        SELECT evento_id, deportista_id, '
+        . '               SUM(CASE WHEN estado_pago <> "anulado" THEN 1 ELSE 0 END) AS modalidades_activas, '
+        . '               SUM(CASE WHEN estado_pago = "pagado" THEN 1 ELSE 0 END) AS pagadas, '
+        . '               SUM(CASE WHEN estado_pago <> "anulado" THEN monto ELSE 0 END) AS monto_total '
+        . '        FROM evento_federado_inscripciones '
+        . '        GROUP BY evento_id, deportista_id'
+        . '    ) agrupadas '
+        . '    WHERE modalidades_activas > 0 '
         . '    GROUP BY evento_id'
         . ') s ON s.evento_id = e.id '
         . 'ORDER BY e.fecha_inicio DESC, e.id DESC'
@@ -81,7 +131,8 @@ function evento_federado_find(int $id): ?array
     }
 
     $stmt = db()->prepare(
-        'SELECT e.id, e.nombre, e.nivel, e.fecha_inicio, e.fecha_fin, e.lugar, e.costo_inscripcion, e.cupo, '
+        'SELECT e.id, e.nombre, e.nivel, e.fecha_inicio, e.fecha_fin, e.lugar, e.costo_inscripcion, '
+        . 'e.tarifa_una_modalidad, e.tarifa_dos_modalidades, e.tarifa_acompanamiento_pista, e.cupo, '
         . 'e.estado, e.observaciones '
         . 'FROM eventos_federados e '
         . 'WHERE e.id = :id'
@@ -96,9 +147,9 @@ function evento_federado_create(array $data): int
 {
     $stmt = db()->prepare(
         'INSERT INTO eventos_federados '
-        . '(nombre, nivel, fecha_inicio, fecha_fin, lugar, costo_inscripcion, cupo, estado, observaciones) '
+        . '(nombre, nivel, fecha_inicio, fecha_fin, lugar, costo_inscripcion, tarifa_una_modalidad, tarifa_dos_modalidades, tarifa_acompanamiento_pista, cupo, estado, observaciones) '
         . 'VALUES '
-        . '(:nombre, :nivel, :fecha_inicio, :fecha_fin, :lugar, :costo_inscripcion, :cupo, :estado, :observaciones)'
+        . '(:nombre, :nivel, :fecha_inicio, :fecha_fin, :lugar, :costo_inscripcion, :tarifa_una_modalidad, :tarifa_dos_modalidades, :tarifa_acompanamiento_pista, :cupo, :estado, :observaciones)'
     );
     $stmt->execute([
         'nombre' => $data['nombre'],
@@ -106,7 +157,10 @@ function evento_federado_create(array $data): int
         'fecha_inicio' => $data['fecha_inicio'],
         'fecha_fin' => $data['fecha_fin'] !== '' ? $data['fecha_fin'] : null,
         'lugar' => $data['lugar'] !== '' ? $data['lugar'] : null,
-        'costo_inscripcion' => $data['costo_inscripcion'],
+        'costo_inscripcion' => $data['tarifa_una_modalidad'],
+        'tarifa_una_modalidad' => $data['tarifa_una_modalidad'],
+        'tarifa_dos_modalidades' => $data['tarifa_dos_modalidades'],
+        'tarifa_acompanamiento_pista' => $data['tarifa_acompanamiento_pista'],
         'cupo' => $data['cupo'] > 0 ? $data['cupo'] : null,
         'estado' => $data['estado'],
         'observaciones' => $data['observaciones'] !== '' ? $data['observaciones'] : null,
@@ -125,6 +179,9 @@ function evento_federado_update(int $id, array $data): void
         . 'fecha_fin = :fecha_fin, '
         . 'lugar = :lugar, '
         . 'costo_inscripcion = :costo_inscripcion, '
+        . 'tarifa_una_modalidad = :tarifa_una_modalidad, '
+        . 'tarifa_dos_modalidades = :tarifa_dos_modalidades, '
+        . 'tarifa_acompanamiento_pista = :tarifa_acompanamiento_pista, '
         . 'cupo = :cupo, '
         . 'estado = :estado, '
         . 'observaciones = :observaciones '
@@ -137,7 +194,10 @@ function evento_federado_update(int $id, array $data): void
         'fecha_inicio' => $data['fecha_inicio'],
         'fecha_fin' => $data['fecha_fin'] !== '' ? $data['fecha_fin'] : null,
         'lugar' => $data['lugar'] !== '' ? $data['lugar'] : null,
-        'costo_inscripcion' => $data['costo_inscripcion'],
+        'costo_inscripcion' => $data['tarifa_una_modalidad'],
+        'tarifa_una_modalidad' => $data['tarifa_una_modalidad'],
+        'tarifa_dos_modalidades' => $data['tarifa_dos_modalidades'],
+        'tarifa_acompanamiento_pista' => $data['tarifa_acompanamiento_pista'],
         'cupo' => $data['cupo'] > 0 ? $data['cupo'] : null,
         'estado' => $data['estado'],
         'observaciones' => $data['observaciones'] !== '' ? $data['observaciones'] : null,
@@ -162,6 +222,8 @@ function evento_federado_inscripciones_all(int $eventoId): array
         . 'ei.estado_pago, ei.referencia, ei.observaciones, '
         . 'd.nombre AS deportista_nombre, d.rut AS deportista_rut, '
         . 'mc.nombre AS modalidad_nombre, mc.codigo AS modalidad_codigo, '
+        . 'dmc.nivel AS nivel_competencia, dmc.subnivel AS subnivel_competencia, '
+        . 'dmc.categoria AS categoria_competencia, '
         . 'a.nombre AS apoderado_nombre '
         . 'FROM evento_federado_inscripciones ei '
         . 'INNER JOIN deportistas d ON d.id = ei.deportista_id '
@@ -279,6 +341,181 @@ function evento_federado_inscripcion_find(int $eventoId, int $asignacionId): ?ar
     return $row ?: null;
 }
 
+function evento_federado_recalcular_monto_deportista(int $eventoId, int $deportistaId): void
+{
+    $evento = evento_federado_find($eventoId);
+    if ($evento === null) {
+        return;
+    }
+
+    $stmt = db()->prepare(
+        'SELECT COUNT(*) FROM evento_federado_inscripciones '
+        . 'WHERE evento_id = :evento_id AND deportista_id = :deportista_id AND estado_pago <> "anulado"'
+    );
+    $stmt->execute([
+        'evento_id' => $eventoId,
+        'deportista_id' => $deportistaId,
+    ]);
+    $modalidades = (int) $stmt->fetchColumn();
+    if ($modalidades <= 0) {
+        return;
+    }
+
+    $monto = evento_federado_monto_por_modalidad($evento, $modalidades);
+    $stmt = db()->prepare(
+        'UPDATE evento_federado_inscripciones SET monto = :monto '
+        . 'WHERE evento_id = :evento_id AND deportista_id = :deportista_id AND estado_pago <> "anulado"'
+    );
+    $stmt->execute([
+        'monto' => $monto,
+        'evento_id' => $eventoId,
+        'deportista_id' => $deportistaId,
+    ]);
+
+    if (evento_federado_cobros_schema_ready()) {
+        evento_federado_cobro_upsert_inscripcion(
+            $eventoId,
+            $deportistaId,
+            evento_federado_tarifa_total($evento, $modalidades)
+        );
+    }
+}
+
+function evento_federado_cobros_schema_ready(): bool
+{
+    static $ready = null;
+
+    if ($ready !== null) {
+        return $ready;
+    }
+
+    $stmt = db()->prepare(
+        'SELECT COUNT(*) FROM information_schema.tables '
+        . 'WHERE table_schema = DATABASE() AND table_name = "evento_federado_cobros"'
+    );
+    $stmt->execute();
+    $ready = (int) $stmt->fetchColumn() === 1;
+
+    return $ready;
+}
+
+function evento_federado_cobros_all(int $eventoId): array
+{
+    if (!evento_federado_cobros_schema_ready()) {
+        return [];
+    }
+
+    $stmt = db()->prepare(
+        'SELECT c.id, c.evento_id, c.deportista_id, c.tipo_cobro, c.monto, c.estado_pago, '
+        . 'c.metodo_pago, c.referencia, c.pagado_at, c.created_at, c.updated_at, '
+        . 'd.nombre AS deportista_nombre '
+        . 'FROM evento_federado_cobros c '
+        . 'INNER JOIN deportistas d ON d.id = c.deportista_id '
+        . 'WHERE c.evento_id = :evento_id '
+        . 'ORDER BY d.nombre ASC, c.tipo_cobro ASC'
+    );
+    $stmt->execute(['evento_id' => $eventoId]);
+
+    return $stmt->fetchAll();
+}
+
+function evento_federado_cobro_upsert_inscripcion(int $eventoId, int $deportistaId, float $monto): void
+{
+    if (!evento_federado_cobros_schema_ready()) {
+        return;
+    }
+
+    $stmt = db()->prepare(
+        'INSERT INTO evento_federado_cobros '
+        . '(evento_id, deportista_id, tipo_cobro, monto, estado_pago) '
+        . 'VALUES (:evento_id, :deportista_id, "inscripcion", :monto, "pendiente") '
+        . 'ON DUPLICATE KEY UPDATE '
+        . 'estado_pago = IF(monto = VALUES(monto), estado_pago, "pendiente"), '
+        . 'metodo_pago = IF(monto = VALUES(monto), metodo_pago, NULL), '
+        . 'referencia = IF(monto = VALUES(monto), referencia, NULL), '
+        . 'pagado_at = IF(monto = VALUES(monto), pagado_at, NULL), '
+        . 'monto = VALUES(monto)'
+    );
+    $stmt->execute([
+        'evento_id' => $eventoId,
+        'deportista_id' => $deportistaId,
+        'monto' => round($monto, 2),
+    ]);
+}
+
+function evento_federado_cobro_acompanamiento_create(int $eventoId, int $deportistaId): void
+{
+    if (!evento_federado_cobros_schema_ready()) {
+        throw new RuntimeException('Falta aplicar la migracion 014 de cobros de eventos federados.');
+    }
+
+    $evento = evento_federado_find($eventoId);
+    if ($evento === null) {
+        throw new RuntimeException('No se encontro el evento.');
+    }
+
+    $stmt = db()->prepare(
+        'SELECT COUNT(*) FROM evento_federado_inscripciones '
+        . 'WHERE evento_id = :evento_id AND deportista_id = :deportista_id AND estado_pago <> "anulado"'
+    );
+    $stmt->execute(['evento_id' => $eventoId, 'deportista_id' => $deportistaId]);
+    if ((int) $stmt->fetchColumn() <= 0) {
+        throw new RuntimeException('La deportista debe estar inscrita antes de agregar acompanamiento.');
+    }
+
+    $stmt = db()->prepare(
+        'INSERT INTO evento_federado_cobros '
+        . '(evento_id, deportista_id, tipo_cobro, monto, estado_pago) '
+        . 'VALUES (:evento_id, :deportista_id, "acompanamiento", :monto, "pendiente") '
+        . 'ON DUPLICATE KEY UPDATE monto = VALUES(monto), '
+        . 'estado_pago = IF(estado_pago = "anulado", "pendiente", estado_pago)'
+    );
+    $stmt->execute([
+        'evento_id' => $eventoId,
+        'deportista_id' => $deportistaId,
+        'monto' => (float) ($evento['tarifa_acompanamiento_pista'] ?? 40000),
+    ]);
+}
+
+function evento_federado_cobro_update_estado(
+    int $eventoId,
+    int $deportistaId,
+    string $tipoCobro,
+    string $estado,
+    string $metodoPago = '',
+    string $referencia = ''
+): void {
+    if (!evento_federado_cobros_schema_ready()) {
+        throw new RuntimeException('Falta aplicar la migracion 014 de cobros de eventos federados.');
+    }
+    if (!in_array($tipoCobro, ['inscripcion', 'acompanamiento'], true)) {
+        throw new RuntimeException('Tipo de cobro no valido.');
+    }
+    if (!in_array($estado, ['pendiente', 'pagado', 'anulado'], true)) {
+        throw new RuntimeException('Estado de pago no valido.');
+    }
+
+    $stmt = db()->prepare(
+        'UPDATE evento_federado_cobros SET estado_pago = :estado, '
+        . 'metodo_pago = :metodo_pago, referencia = :referencia, '
+        . 'pagado_at = IF(:estado_at = "pagado", NOW(), NULL) '
+        . 'WHERE evento_id = :evento_id AND deportista_id = :deportista_id AND tipo_cobro = :tipo_cobro'
+    );
+    $stmt->execute([
+        'estado' => $estado,
+        'estado_at' => $estado,
+        'metodo_pago' => $estado === 'pagado' ? (trim($metodoPago) ?: null) : null,
+        'referencia' => $estado === 'pagado' ? (trim($referencia) ?: null) : null,
+        'evento_id' => $eventoId,
+        'deportista_id' => $deportistaId,
+        'tipo_cobro' => $tipoCobro,
+    ]);
+
+    if ($stmt->rowCount() === 0) {
+        throw new RuntimeException('No se encontro el cobro para actualizar.');
+    }
+}
+
 function evento_federado_inscribir(int $eventoId, int $deportistaId, array $data = []): void
 {
     if (!eventos_federados_schema_ready()) {
@@ -315,10 +552,19 @@ function evento_federado_inscribir(int $eventoId, int $deportistaId, array $data
         throw new RuntimeException('No se encontro el apoderado del deportista.');
     }
 
-    $monto = array_key_exists('monto', $data) ? (float) $data['monto'] : (float) ($evento['costo_inscripcion'] ?? 0);
-    $estadoPago = trim((string) ($data['estado_pago'] ?? 'pendiente'));
-    if (!in_array($estadoPago, ['pendiente', 'pagado', 'anulado'], true)) {
-        $estadoPago = 'pendiente';
+    $existing = evento_federado_inscripcion_find($eventoId, $asignacionId);
+    $stmt = db()->prepare(
+        'SELECT COUNT(*) FROM evento_federado_inscripciones '
+        . 'WHERE evento_id = :evento_id AND deportista_id = :deportista_id AND estado_pago <> "anulado"'
+    );
+    $stmt->execute([
+        'evento_id' => $eventoId,
+        'deportista_id' => $deportistaId,
+    ]);
+    $modalidadesActuales = (int) $stmt->fetchColumn();
+    $agregaModalidad = $existing === null || ($existing['estado_pago'] ?? '') === 'anulado';
+    if ($agregaModalidad && $modalidadesActuales >= 2) {
+        throw new RuntimeException('Una deportista puede inscribir hasta dos modalidades por evento.');
     }
 
     $fechaInscripcion = trim((string) ($data['fecha_inscripcion'] ?? ''));
@@ -341,8 +587,7 @@ function evento_federado_inscribir(int $eventoId, int $deportistaId, array $data
         . 'subnivel = VALUES(subnivel), '
         . 'categoria = VALUES(categoria), '
         . 'fecha_inscripcion = VALUES(fecha_inscripcion), '
-        . 'monto = VALUES(monto), '
-        . 'estado_pago = VALUES(estado_pago), '
+        . 'estado_pago = IF(estado_pago = "anulado", "pendiente", estado_pago), '
         . 'referencia = VALUES(referencia), '
         . 'observaciones = VALUES(observaciones)'
     );
@@ -355,11 +600,13 @@ function evento_federado_inscribir(int $eventoId, int $deportistaId, array $data
         'categoria' => trim((string) ($asignacion['categoria'] ?? '')) ?: null,
         'apoderado_id' => $apoderadoId,
         'fecha_inscripcion' => $fechaInscripcion,
-        'monto' => $monto,
-        'estado_pago' => $estadoPago,
+        'monto' => 0.00,
+        'estado_pago' => 'pendiente',
         'referencia' => trim((string) ($data['referencia'] ?? '')) ?: null,
         'observaciones' => trim((string) ($data['observaciones'] ?? '')) ?: null,
     ]);
+
+    evento_federado_recalcular_monto_deportista($eventoId, $deportistaId);
 }
 
 function evento_federado_inscripcion_delete(int $eventoId, int $asignacionId): void

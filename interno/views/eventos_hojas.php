@@ -19,10 +19,10 @@ $sheetYear = date('Y');
 
 $sheetTitles = [
     'freeskating_short' => 'SHORT PROGRAM CONTENT SHEET ' . $sheetYear,
-    'freeskating_free' => 'FREE PROGRAM CONTENT SHEET ' . $sheetYear,
+    'freeskating_free' => 'LONG PROGRAM CONTENT SHEET ' . $sheetYear,
     'solo_dance_style' => 'STYLE DANCE CONTENT SHEET ' . $sheetYear,
     'solo_dance_free' => 'FREE DANCE CONTENT SHEET ' . $sheetYear,
-    'nacional_formativo_escuela_d' => 'HOJA DE CONTENIDO TECNICO ' . $sheetYear,
+    'nacional_formativo_escuela_d' => 'HOJA DE CONTENIDO TÉCNICO ' . $sheetYear,
 ];
 $sheetSubtitles = [
     'freeskating_short' => 'FREESKATE',
@@ -40,16 +40,24 @@ $sheetSectionTitles = [
 ];
 $sheetFileSuffixes = [
     'freeskating_short' => 'ShortProgram',
-    'freeskating_free' => 'FreeProgram',
+    'freeskating_free' => 'LongProgram',
     'solo_dance_style' => 'StyleDance',
     'solo_dance_free' => 'FreeDance',
     'nacional_formativo_escuela_d' => 'ContenidoTecnico',
+];
+$sheetProgramFilenames = [
+    'freeskating_short' => 'Short',
+    'freeskating_free' => 'Long',
+    'solo_dance_style' => 'Style Dance',
+    'solo_dance_free' => 'Free Dance',
+    'nacional_formativo_escuela_d' => 'Contenido Tecnico',
 ];
 
 $sheetTitle = $sheetTitles[$selectedTemplateCode] ?? ((string) ($selectedTemplate['label'] ?? 'CONTENT SHEET') . ' ' . $sheetYear);
 $sheetSubtitle = $sheetSubtitles[$selectedTemplateCode] ?? (string) ($selectedTemplate['short_label'] ?? 'CONTENT SHEET');
 $sheetSectionTitle = $sheetSectionTitles[$selectedTemplateCode] ?? 'ELEMENTS OF THE PROGRAM';
 $sheetFileSuffix = $sheetFileSuffixes[$selectedTemplateCode] ?? 'ContentSheet';
+$sheetProgramFilename = $sheetProgramFilenames[$selectedTemplateCode] ?? 'Contenido Tecnico';
 
 $selectedInscripcion = null;
 foreach ($inscripciones as $inscripcionRow) {
@@ -65,6 +73,7 @@ if ($selectedInscripcion === null && !empty($inscripciones)) {
 $selectedInscripcionLabel = $selectedInscripcion !== null
     ? trim((string) ($selectedInscripcion['deportista_nombre'] ?? '') . ' · ' . (string) ($selectedInscripcion['modalidad_nombre'] ?? ''))
     : '';
+$selectedModalidadNombre = (string) ($hoja_form['modalidad_nombre'] ?? ($selectedInscripcion['modalidad_nombre'] ?? ''));
 
 $initialRows = array_values(array_filter(
     array_slice((array) ($hoja_form['rows'] ?? []), 0, $rowCount),
@@ -82,8 +91,8 @@ while (count($initialRows) < $rowCount) {
 $initialValues = [
     'competitor' => (string) ($hoja_form['competidor_nombre'] ?? ''),
     'category' => (string) ($hoja_form['categoria_label'] ?? ''),
-    'fedtype' => 'FEDERATION',
-    'federation' => (string) ($hoja_form['club'] ?? ''),
+    'fedtype' => 'CLUB',
+    'federation' => (string) (($hoja_form['club'] ?? '') !== '' ? $hoja_form['club'] : 'Maiteam'),
     'music' => (string) ($hoja_form['choreography'] ?? ''),
     'representing' => (string) ($hoja_form['representing'] ?? ($hoja_form['club'] ?? '')),
     'observations' => (string) ($hoja_form['observaciones'] ?? ''),
@@ -95,12 +104,18 @@ $sheetConfig = [
     'sectionTitle' => $sheetSectionTitle,
     'rowCount' => $rowCount,
     'fileSuffix' => $sheetFileSuffix,
-    'logoUrl' => base_url('/assets/img/Logo principal.png'),
+    'modality' => $selectedModalidadNombre,
+    'programFilename' => $sheetProgramFilename,
+    'isNational' => $selectedTemplateCode === 'nacional_formativo_escuela_d',
+    'isSoloDance' => str_starts_with($selectedTemplateCode, 'solo_dance'),
+    'logoUrl' => $selectedTemplateCode === 'nacional_formativo_escuela_d'
+        ? base_url('/assets/img/federacion-patinaje-logo.png')
+        : base_url('/assets/img/world-skate-logo.png'),
     'templateCode' => $selectedTemplateCode,
     'codes' => $selectedTemplate['codes'] ?? [],
 ];
 ?>
-<section class="page ficha-page eventos-page hoja-sk8info-page">
+<section class="page ficha-page eventos-page hoja-sk8info-page<?= $selectedTemplateCode === 'nacional_formativo_escuela_d' ? ' hoja-nacional-page' : (str_starts_with($selectedTemplateCode, 'solo_dance') ? ' hoja-solo-dance-page' : '') ?>">
     <div class="sheet-page">
         <div id="main-hdr" class="sheet-banner">
             <div class="sheet-banner-copy">
@@ -109,7 +124,7 @@ $sheetConfig = [
                 <p><?= e($sheetSubtitle) ?></p>
             </div>
             <div class="sheet-banner-actions">
-                <a class="button ghost" href="#eventos-detalle" data-ficha-tab data-ficha-target="eventos-detalle">Volver al detalle</a>
+                <a class="button ghost" href="<?= e(base_url('/?page=eventos&action=show&id=' . (int) ($evento['id'] ?? 0))) ?>">Volver al detalle</a>
                 <button type="button" class="button ghost" id="restore-button">Import TXT</button>
                 <button type="button" class="button" id="download-button">Download PDF</button>
             </div>
@@ -149,29 +164,33 @@ $sheetConfig = [
                 <div class="sheet-form-card">
                     <div class="sheet-grid">
                         <label class="sheet-field">
-                            Competitor's Name
+                            <?= $selectedTemplateCode === 'nacional_formativo_escuela_d' ? 'Nombre del competidor(a)' : "Competitor's Name" ?>
                             <input id="sp_competitor" type="text" name="competidor_nombre" value="<?= e($initialValues['competitor']) ?>" placeholder="Name">
                         </label>
 
                         <label class="sheet-field">
-                            Category
+                            <?= $selectedTemplateCode === 'nacional_formativo_escuela_d' ? 'Categoría - Nivel' : 'Category' ?>
                             <input id="sp_category" type="text" name="categoria_label" value="<?= e($initialValues['category']) ?>" placeholder="Category">
                         </label>
 
                         <label class="sheet-field">
-                            Fed type
-                            <input id="sp_fedtype" type="text" name="fedtype" value="<?= e($initialValues['fedtype']) ?>" placeholder="FEDERATION">
+                            <?= $selectedTemplateCode === 'nacional_formativo_escuela_d' ? 'Club' : 'Federation' ?>
+                            <input id="sp_federation" type="text" name="club" value="<?= e($initialValues['federation']) ?>" placeholder="Maiteam">
                         </label>
 
                         <label class="sheet-field">
-                            Federation
-                            <input id="sp_federation" type="text" name="club" value="<?= e($initialValues['federation']) ?>" placeholder="Club MaiTeam">
-                        </label>
-
-                        <label class="sheet-field">
-                            Music
+                            <?= $selectedTemplateCode === 'nacional_formativo_escuela_d' ? 'Coreografía' : 'Music' ?>
                             <input id="sp_music" type="text" name="choreography" value="<?= e($initialValues['music']) ?>" placeholder="Music title">
                         </label>
+
+                        <?php if ($selectedTemplateCode === 'nacional_formativo_escuela_d'): ?>
+                            <input id="sp_fedtype" type="hidden" name="fedtype" value="CLUB">
+                        <?php else: ?>
+                            <label class="sheet-field">
+                                Fed type
+                                <input id="sp_fedtype" type="text" name="fedtype" value="<?= e($initialValues['fedtype']) ?>" placeholder="CLUB">
+                            </label>
+                        <?php endif; ?>
                     </div>
                 </div>
 
@@ -179,7 +198,7 @@ $sheetConfig = [
                     <div class="sheet-card-head">
                         <div>
                             <p class="form-label"><?= e($sheetSectionTitle) ?></p>
-                            <p class="hint">Time is in m:ss. Select a code and the element name will auto-fill if blank.</p>
+                            <p class="hint"><?= $selectedTemplateCode === 'nacional_formativo_escuela_d' ? 'Tiempo en mins:secs y código del elemento.' : 'Time is in m:ss. Select a code and the element name will auto-fill if blank.' ?></p>
                         </div>
                         <?php if ($selectedInscripcionLabel !== ''): ?>
                             <span class="chip"><?= e($selectedInscripcionLabel) ?></span>
@@ -238,6 +257,12 @@ $sheetConfig = [
     window._theme = BLUE;
 
     const config = <?= json_encode($sheetConfig, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?: '{}' ?>;
+    const THEME = config.isSoloDance ? {
+        hdr: ['#27766a', '#2e8d7e', '#55aa9d'],
+        col: ['#27766a', '#2e8d7e'],
+        pdf: { hdr: [39, 118, 106], col: [46, 141, 126] }
+    } : BLUE;
+    window._theme = THEME;
     const initialRows = <?= json_encode($initialRows, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?: '[]' ?>;
 
     const form = document.getElementById('sheet-form');
@@ -263,6 +288,10 @@ $sheetConfig = [
     let logoAspect = 1;
 
     (function () {
+        if (!config.logoUrl) {
+            return;
+        }
+
         const img = new Image();
         img.onload = function () {
             logoAspect = img.naturalWidth / img.naturalHeight;
@@ -323,7 +352,7 @@ $sheetConfig = [
         for (let i = 1; i <= count; i++) {
             const data = rows[i - 1] || {};
             const row = document.createElement('div');
-            row.className = 'el-row' + (i % 2 === 0 ? ' even' : '');
+            row.className = 'el-row' + (i % 2 === 0 ? ' even' : '') + (config.isNational ? ' national-row' : '');
 
             const num = document.createElement('div');
             num.className = 'el-num';
@@ -353,6 +382,11 @@ $sheetConfig = [
             notes.autocomplete = 'off';
             notes.value = data.notes || '';
 
+            if (config.isNational) {
+                num.hidden = true;
+                notes.hidden = true;
+            }
+
             row.append(num, time, code, notes);
             container.appendChild(row);
         }
@@ -373,10 +407,10 @@ $sheetConfig = [
 
     function sanitizeFilename() {
         return (
-            gv('sp_competitor') + '_' +
-            gv('sp_category') + '_' +
-            config.fileSuffix + '_contents'
-        ).replace(/[\/:\\*?"<>|& ]/g, '_') || 'ContentSheet';
+            gv('sp_competitor') + ' - ' +
+            gv('sp_category') + ' - ' +
+            config.modality + ' - ' + config.programFilename
+        ).replace(/[\/:\\*?"<>|&]/g, '') || 'ContentSheet';
     }
 
     function syncHiddenValues() {
@@ -391,7 +425,101 @@ $sheetConfig = [
         }
     }
 
+    function generateNationalPDF() {
+        if (!window.jspdf || !window.jspdf.jsPDF || typeof window.jspdf.jsPDF !== 'function') {
+            alert('No se pudo cargar la libreria PDF del navegador.');
+            return;
+        }
+
+        syncHiddenValues();
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF({ unit: 'mm', format: 'letter', orientation: 'portrait', compress: true });
+        const x = 30;
+        const width = 155;
+        const labelWidth = 50;
+        const year = new Date().getFullYear();
+
+        if (logoData) {
+            doc.addImage(logoData, logoType, 27, 27, 42, 34);
+        }
+        doc.setTextColor(0, 0, 0);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(16);
+        doc.text('HOJA DE CONTENIDO', 132, 29, { align: 'center' });
+        doc.text('TÉCNICO ' + year, 132, 39, { align: 'center' });
+        doc.setFont('helvetica', 'normal');
+        doc.text('NIVELES', 132, 49, { align: 'center' });
+        doc.text('FORMATIVOS Y ESCUELAS', 132, 59, { align: 'center' });
+
+        function formRow(top, label, value) {
+            doc.setFillColor(211, 224, 237);
+            doc.rect(x, top, labelWidth, 7, 'F');
+            doc.setFillColor(255, 255, 255);
+            doc.rect(x + labelWidth, top, width - labelWidth, 7, 'F');
+            doc.setDrawColor(0, 0, 0);
+            doc.rect(x, top, width, 7);
+            doc.line(x + labelWidth, top, x + labelWidth, top + 7);
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(9.5);
+            doc.text(label, x + 2, top + 4.8);
+            doc.text(String(value || ''), x + labelWidth + 2, top + 4.8);
+        }
+
+        formRow(73, 'Nombre del competidor(a)', gv('sp_competitor'));
+        formRow(80, 'Categoría - Nivel', gv('sp_category'));
+        formRow(87, 'Club', gv('sp_federation'));
+        formRow(101, 'Coreografía', gv('sp_music'));
+
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(13);
+        doc.text('ELEMENTOS DEL PROGRAMA', 107.5, 115, { align: 'center' });
+
+        const rows = [];
+        for (let i = 1; i <= config.rowCount; i++) {
+            const code = gv('sp_code' + i);
+            rows.push([gv('sp_time' + i), code, (config.codes && config.codes[code]) || '']);
+        }
+        doc.autoTable({
+            startY: 118,
+            margin: { left: x, right: 31 },
+            tableWidth: width,
+            head: [['Tiempo', 'Código', 'Elemento']],
+            body: rows,
+            theme: 'grid',
+            headStyles: { fillColor: [211, 224, 237], textColor: [0, 0, 0], fontStyle: 'bold', halign: 'center' },
+            bodyStyles: {
+                textColor: [0, 0, 0],
+                minCellHeight: config.rowCount > 9 ? 5.5 : 7,
+                fontSize: config.rowCount > 9 ? 8.5 : 9
+            },
+            columnStyles: { 0: { cellWidth: 20 }, 1: { cellWidth: 20 }, 2: { cellWidth: 115 } }
+        });
+
+        const legendY = Math.min(214, doc.lastAutoTable.finalY + 10);
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(8);
+        doc.text('CÓDIGOS DE ELEMENTOS', x, legendY);
+        const entries = Object.entries(config.codes || {});
+        entries.forEach(function (entry, index) {
+            const lx = x;
+            const ly = legendY + 7 + index * 6.2;
+            const note = ['SSSq', 'FoSq', 'ChStS'].includes(entry[0]) ? ' (Especificar tiempo de inicio)' : '';
+            doc.text(entry[1], lx, ly);
+            doc.setFont('helvetica', 'bold');
+            doc.text(entry[0], lx + 54, ly);
+            doc.setFont('helvetica', 'normal');
+            if (note) {
+                doc.text(note, lx + 70, ly);
+            }
+        });
+        doc.save(sanitizeFilename() + '.pdf');
+    }
+
     function generatePDF() {
+        if (config.isNational) {
+            generateNationalPDF();
+            return;
+        }
         if (!window.jspdf || !window.jspdf.jsPDF || typeof window.jspdf.jsPDF !== 'function') {
             alert('No se pudo cargar la libreria PDF del navegador.');
             return;
@@ -401,8 +529,8 @@ $sheetConfig = [
 
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait', compress: true });
-        const NAVY = BLUE.pdf.hdr;
-        const BLUE2 = BLUE.pdf.col;
+        const NAVY = THEME.pdf.hdr;
+        const BLUE2 = THEME.pdf.col;
         const m = 10;
         const W = 210;
         const cW = W - m * 2;
@@ -430,6 +558,7 @@ $sheetConfig = [
 
         function elemTable(startY, count) {
             const rows = [];
+            const compactRows = config.rowCount > 9;
             for (let i = 1; i <= count; i++) {
                 rows.push([
                     String(i),
@@ -454,7 +583,11 @@ $sheetConfig = [
                 body: rows,
                 theme: 'grid',
                 headStyles: { fontSize: 9 },
-                bodyStyles: { fontSize: 12, minCellHeight: 25, valign: 'middle' },
+                bodyStyles: {
+                    fontSize: compactRows ? 10 : 12,
+                    minCellHeight: compactRows ? 18 : 25,
+                    valign: 'middle'
+                },
                 alternateRowStyles: { fillColor: [248, 250, 252] },
                 columnStyles: {
                     0: { cellWidth: 12, halign: 'center' },
@@ -503,6 +636,16 @@ $sheetConfig = [
         doc.setDrawColor(0);
         y += 8;
 
+        if (config.templateCode === 'solo_dance_style') {
+            doc.setFillColor(...THEME.pdf.col);
+            doc.rect(m, y, cW, 7, 'F');
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(10);
+            doc.setTextColor(255, 255, 255);
+            doc.text('STYLE DANCE', W / 2, y + 4.8, { align: 'center' });
+            doc.setTextColor(0, 0, 0);
+            y += 9;
+        }
         elemTable(y, config.rowCount);
         doc.save(sanitizeFilename() + '.pdf');
     }

@@ -1397,6 +1397,7 @@ if ($page === 'eventos') {
     $schemaReady = eventos_federados_schema_ready();
     $hojasSchemaReady = evento_federado_hojas_schema_ready();
     $nivelesEvento = modalidades_competencia_niveles_globales();
+    $tarifasPredeterminadas = eventos_federados_tarifas_predeterminadas();
     $eventos = eventos_federados_all();
     $blankEvento = [
         'id' => 0,
@@ -1405,7 +1406,10 @@ if ($page === 'eventos') {
         'fecha_inicio' => '',
         'fecha_fin' => '',
         'lugar' => '',
-        'costo_inscripcion' => '0.00',
+        'costo_inscripcion' => (string) $tarifasPredeterminadas['tarifa_una_modalidad'],
+        'tarifa_una_modalidad' => (string) $tarifasPredeterminadas['tarifa_una_modalidad'],
+        'tarifa_dos_modalidades' => (string) $tarifasPredeterminadas['tarifa_dos_modalidades'],
+        'tarifa_acompanamiento_pista' => (string) $tarifasPredeterminadas['tarifa_acompanamiento_pista'],
         'cupo' => '',
         'estado' => 'borrador',
         'observaciones' => '',
@@ -1414,14 +1418,16 @@ if ($page === 'eventos') {
     $eventoForm = $blankEvento;
     $evento = null;
     $inscripciones = [];
+    $cobros = [];
     $deportistasElegibles = [];
     $hojasElementos = [];
     $hojaContext = null;
     $hojaForm = [];
     $hojaSelectedInscripcionId = 0;
+    $hojaSelectedTemplateCode = trim((string) ($_GET['plantilla'] ?? ''));
 
     if ($schemaReady && in_array($action, ['show', 'edit', 'hoja', 'hoja-pdf'], true)) {
-        $id = (int) ($_GET['id'] ?? 0);
+        $id = (int) ($_GET['id'] ?? ($_POST['id'] ?? 0));
         $evento = $id > 0 ? evento_federado_find($id) : null;
         if ($evento === null) {
             render('404', [
@@ -1432,19 +1438,38 @@ if ($page === 'eventos') {
         }
         $eventoForm = array_merge($blankEvento, $evento);
         $inscripciones = evento_federado_inscripciones_all((int) $evento['id']);
+        $cobros = evento_federado_cobros_all((int) $evento['id']);
         $deportistasElegibles = evento_federado_deportistas_elegibles($evento);
         $hojasElementos = $hojasSchemaReady ? evento_federado_hojas_all((int) $evento['id']) : [];
         $hojaSelectedInscripcionId = (int) ($_GET['inscripcion_id'] ?? 0);
         if ($hojaSelectedInscripcionId <= 0) {
             if (!empty($hojasElementos)) {
                 $hojaSelectedInscripcionId = (int) ($hojasElementos[0]['inscripcion_id'] ?? 0);
-            } elseif (!empty($inscripciones)) {
-                $hojaSelectedInscripcionId = (int) ($inscripciones[0]['id'] ?? 0);
+                if ($hojaSelectedTemplateCode === '') {
+                    $hojaSelectedTemplateCode = (string) ($hojasElementos[0]['plantilla_codigo'] ?? '');
+                }
+            } else {
+                foreach ($inscripciones as $inscripcionRow) {
+                    if (evento_federado_hoja_programs_require_sheet($inscripcionRow)) {
+                        $hojaSelectedInscripcionId = (int) ($inscripcionRow['id'] ?? 0);
+                        break;
+                    }
+                }
             }
         }
 
         if ($hojasSchemaReady && $hojaSelectedInscripcionId > 0) {
-            $hojaContext = evento_federado_hoja_context_find((int) $evento['id'], $hojaSelectedInscripcionId);
+            $hojaContext = evento_federado_hoja_context_find(
+                (int) $evento['id'],
+                $hojaSelectedInscripcionId,
+                $hojaSelectedTemplateCode !== '' ? $hojaSelectedTemplateCode : null
+            );
+            if ($hojaContext === null && $hojaSelectedTemplateCode !== '') {
+                $hojaContext = evento_federado_hoja_context_find((int) $evento['id'], $hojaSelectedInscripcionId);
+                if ($hojaContext !== null) {
+                    $hojaContext['plantilla_codigo'] = $hojaSelectedTemplateCode;
+                }
+            }
             if ($hojaContext !== null) {
                 $hojaForm = evento_federado_hoja_form_data($hojaContext);
             }
@@ -1453,17 +1478,23 @@ if ($page === 'eventos') {
 
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (!$schemaReady) {
-            $errors[] = 'Falta aplicar la migracion de eventos federados en esta base de datos.';
+            $errors[] = 'Faltan aplicar las migraciones de eventos federados en esta base de datos.';
         } else {
             $postAction = $_POST['action'] ?? $action;
             $eventoId = (int) ($_POST['id'] ?? ($_POST['evento_id'] ?? 0));
+            $tarifaUnaModalidad = (float) str_replace(',', '.', (string) ($_POST['tarifa_una_modalidad'] ?? $_POST['costo_inscripcion'] ?? $tarifasPredeterminadas['tarifa_una_modalidad']));
+            $tarifaDosModalidades = (float) str_replace(',', '.', (string) ($_POST['tarifa_dos_modalidades'] ?? $tarifasPredeterminadas['tarifa_dos_modalidades']));
+            $tarifaAcompanamientoPista = (float) str_replace(',', '.', (string) ($_POST['tarifa_acompanamiento_pista'] ?? $tarifasPredeterminadas['tarifa_acompanamiento_pista']));
             $form = [
                 'nombre' => trim($_POST['nombre'] ?? ''),
                 'nivel' => trim($_POST['nivel'] ?? ''),
                 'fecha_inicio' => trim($_POST['fecha_inicio'] ?? ''),
                 'fecha_fin' => trim($_POST['fecha_fin'] ?? ''),
                 'lugar' => trim($_POST['lugar'] ?? ''),
-                'costo_inscripcion' => (float) str_replace(',', '.', (string) ($_POST['costo_inscripcion'] ?? '0')),
+                'costo_inscripcion' => $tarifaUnaModalidad,
+                'tarifa_una_modalidad' => $tarifaUnaModalidad,
+                'tarifa_dos_modalidades' => $tarifaDosModalidades,
+                'tarifa_acompanamiento_pista' => $tarifaAcompanamientoPista,
                 'cupo' => (int) ($_POST['cupo'] ?? 0),
                 'estado' => trim($_POST['estado'] ?? 'borrador'),
                 'observaciones' => trim($_POST['observaciones'] ?? ''),
@@ -1474,6 +1505,32 @@ if ($page === 'eventos') {
                     evento_federado_delete($eventoId);
                 }
                 redirect(base_url('/?page=eventos&flash=deleted'));
+            }
+
+            if ($postAction === 'cobro-acompanamiento-create' || $postAction === 'cobro-pagado' || $postAction === 'cobro-pendiente') {
+                $cobroDeportistaId = (int) ($_POST['deportista_id'] ?? 0);
+                $cobroTipo = trim((string) ($_POST['tipo_cobro'] ?? ''));
+                try {
+                    if ($eventoId <= 0 || $cobroDeportistaId <= 0) {
+                        throw new RuntimeException('No se encontro el evento o la deportista.');
+                    }
+                    if ($postAction === 'cobro-acompanamiento-create') {
+                        evento_federado_cobro_acompanamiento_create($eventoId, $cobroDeportistaId);
+                        redirect(base_url('/?page=eventos&action=show&id=' . $eventoId . '&flash=accompaniment-created'));
+                    }
+
+                    evento_federado_cobro_update_estado(
+                        $eventoId,
+                        $cobroDeportistaId,
+                        $cobroTipo,
+                        $postAction === 'cobro-pagado' ? 'pagado' : 'pendiente',
+                        trim((string) ($_POST['metodo_pago'] ?? '')),
+                        trim((string) ($_POST['referencia_cobro'] ?? ''))
+                    );
+                    redirect(base_url('/?page=eventos&action=show&id=' . $eventoId . '&flash=payment-updated'));
+                } catch (Throwable $e) {
+                    $errors[] = $e->getMessage() !== '' ? $e->getMessage() : 'No se pudo actualizar el cobro.';
+                }
             }
 
             if ($postAction === 'hoja-save') {
@@ -1500,7 +1557,11 @@ if ($page === 'eventos') {
                 } else {
                     try {
                         evento_federado_hoja_save($hojaEventoId, $hojaInscripcionId, $hojaFormData);
-                        $hojaContext = evento_federado_hoja_context_find($hojaEventoId, $hojaInscripcionId);
+                        $hojaContext = evento_federado_hoja_context_find(
+                            $hojaEventoId,
+                            $hojaInscripcionId,
+                            $hojaFormData['plantilla_codigo'] !== '' ? $hojaFormData['plantilla_codigo'] : null
+                        );
                         if ($hojaContext !== null) {
                             $hojaForm = evento_federado_hoja_form_data($hojaContext);
                         }
@@ -1509,7 +1570,7 @@ if ($page === 'eventos') {
                             evento_federado_hoja_emitir_pdf($hojaForm);
                         }
 
-                        redirect(base_url('/?page=eventos&action=hoja&id=' . $hojaEventoId . '&inscripcion_id=' . $hojaInscripcionId . '&flash=sheet-updated'));
+                        redirect(base_url('/?page=eventos&action=hoja&id=' . $hojaEventoId . '&inscripcion_id=' . $hojaInscripcionId . '&plantilla=' . rawurlencode($hojaFormData['plantilla_codigo']) . '&flash=sheet-updated'));
                     } catch (Throwable $e) {
                         $errors[] = $e->getMessage() !== '' ? $e->getMessage() : 'No se pudo guardar la hoja de elementos.';
                         $hojaContext = evento_federado_hoja_context_find($hojaEventoId, $hojaInscripcionId);
@@ -1522,7 +1583,7 @@ if ($page === 'eventos') {
                             $hojaForm['representing'] = $hojaFormData['representing'] !== '' ? $hojaFormData['representing'] : $hojaForm['representing'];
                             $hojaForm['choreography'] = $hojaFormData['choreography'] !== '' ? $hojaFormData['choreography'] : $hojaForm['choreography'];
                             $hojaForm['observaciones'] = $hojaFormData['observaciones'] !== '' ? $hojaFormData['observaciones'] : $hojaForm['observaciones'];
-                            $hojaForm['rows'] = evento_federado_hoja_pad_rows(evento_federado_hoja_filter_rows($hojaFormData['rows']), $hojaForm['plantilla_codigo']);
+                            $hojaForm['rows'] = evento_federado_hoja_pad_rows(evento_federado_hoja_filter_rows($hojaFormData['rows'], $hojaForm['plantilla_codigo']), $hojaForm['plantilla_codigo']);
                         }
                     }
                 }
@@ -1554,6 +1615,7 @@ if ($page === 'eventos') {
                 if ($evento !== null) {
                     $eventoForm = array_merge($blankEvento, $evento);
                     $inscripciones = evento_federado_inscripciones_all((int) $evento['id']);
+                    $cobros = evento_federado_cobros_all((int) $evento['id']);
                     $deportistasElegibles = evento_federado_deportistas_elegibles($evento);
                     $hojasElementos = $hojasSchemaReady ? evento_federado_hojas_all((int) $evento['id']) : [];
                 }
@@ -1573,8 +1635,8 @@ if ($page === 'eventos') {
                 if (!in_array($form['estado'], ['borrador', 'abierto', 'cerrado', 'finalizado'], true)) {
                     $errors[] = 'El estado del evento no es valido.';
                 }
-                if ($form['costo_inscripcion'] < 0) {
-                    $errors[] = 'El costo de inscripcion no puede ser negativo.';
+                if ($form['tarifa_una_modalidad'] < 0 || $form['tarifa_dos_modalidades'] < 0 || $form['tarifa_acompanamiento_pista'] < 0) {
+                    $errors[] = 'Las tarifas no pueden ser negativas.';
                 }
                 if ($form['cupo'] < 0) {
                     $errors[] = 'El cupo no puede ser negativo.';
@@ -1600,6 +1662,7 @@ if ($page === 'eventos') {
                     $evento = evento_federado_find($eventoId);
                     if ($evento !== null) {
                         $inscripciones = evento_federado_inscripciones_all((int) $evento['id']);
+                        $cobros = evento_federado_cobros_all((int) $evento['id']);
                         $deportistasElegibles = evento_federado_deportistas_elegibles($evento);
                         $hojasElementos = $hojasSchemaReady ? evento_federado_hojas_all((int) $evento['id']) : [];
                     }
@@ -1644,6 +1707,7 @@ if ($page === 'eventos') {
         'evento' => $evento,
         'evento_form' => $eventoForm,
         'inscripciones' => $inscripciones,
+        'cobros' => $cobros,
         'deportistas_elegibles' => $deportistasElegibles,
         'hojas_elementos' => $hojasElementos,
         'hojas_schema_ready' => $hojasSchemaReady,
