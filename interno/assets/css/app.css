@@ -617,6 +617,88 @@ textarea {
 }
 
 @media (max-width: 720px) {
+  .asistencia-page .page-header,
+  .asistencia-page .kpi-filter {
+    align-items: stretch;
+  }
+
+  .asistencia-page .kpi-filter {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .asistencia-page .kpi-filter label {
+    grid-column: 1 / -1;
+  }
+
+  .asistencia-page .kpi-filter input,
+  .asistencia-page .kpi-filter select,
+  .asistencia-page .kpi-filter button {
+    width: 100%;
+    min-height: 44px;
+  }
+
+  .asistencia-page .table-wrapper {
+    overflow: visible;
+  }
+
+  .asistencia-page table,
+  .asistencia-page thead,
+  .asistencia-page tbody,
+  .asistencia-page tr,
+  .asistencia-page td {
+    display: block;
+    width: 100%;
+  }
+
+  .asistencia-page thead {
+    display: none;
+  }
+
+  .asistencia-page tr {
+    margin-bottom: 14px;
+    padding: 14px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    background: var(--surface-strong);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .asistencia-page td {
+    border: 0;
+    padding: 5px 0;
+  }
+
+  .asistencia-page td:nth-child(2)::before { content: "Apoderado: "; color: var(--muted); }
+  .asistencia-page td:nth-child(3)::before { content: "Coach: "; color: var(--muted); }
+  .asistencia-page td:nth-child(4)::before { content: "Clase: "; color: var(--muted); }
+  .asistencia-page td:nth-child(5)::before { content: "Marcación actual: "; color: var(--muted); }
+
+  .asistencia-page td:last-child .form {
+    gap: 8px;
+    margin-top: 8px;
+  }
+
+  .attendance-quick-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .attendance-quick {
+    min-height: 44px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--surface);
+    cursor: pointer;
+    font-weight: 700;
+  }
+
+  .attendance-quick.present { color: var(--success); border-color: rgba(47, 143, 91, .35); }
+  .attendance-quick.absent { color: var(--danger); border-color: rgba(178, 75, 137, .35); }
+  .attendance-quick.excused { color: var(--warning); grid-column: 1 / -1; }
+
   body.sidebar-open {
     overflow: hidden;
   }

@@ -89,6 +89,7 @@ if (in_array($action, ['list', 'create'], true)): ?>
                 <h1>Resumen de eventos</h1>
             </div>
             <div class="ficha-header-actions">
+                <a class="button ghost" href="/extras/">Clases extras</a>
                 <button
                     type="button"
                     class="button"
@@ -512,6 +513,7 @@ if (in_array($action, ['list', 'create'], true)): ?>
                 <p>Vista de gestion del evento sin pestañas. Cada bloque queda visible para que sea más rapido revisar inscripciones y hojas.</p>
             </div>
             <div class="ficha-header-actions">
+                <a class="button ghost" href="/extras/">Ver clases extras</a>
                 <a class="button ghost" href="<?= e(base_url('/?page=eventos')) ?>">Volver al resumen</a>
                 <?php if ($isEditing): ?>
                     <a class="button ghost" href="<?= e(base_url('/?page=eventos&action=show&id=' . (int) $evento['id'])) ?>">Cancelar edición</a>

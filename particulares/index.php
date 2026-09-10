@@ -44,7 +44,7 @@ if (!empty($_GET['external_reference']) && preg_match('/^particular_reserva_(\d+
 </head>
 
 <body>
-    <nav><a class="brand" href="/"><img src="/interno/assets/img/Logo principal.png" alt="Club MaiTeam"><span>Club MaiTeam</span></a><span class="section-name">Clases particulares</span><a class="back" href="/">Volver al portal</a></nav>
+    <nav><a class="brand" href="/"><img src="/interno/assets/img/Logo principal.png" alt="Club MaiTeam"><span>Club MaiTeam</span></a><span class="section-name">Clases particulares</span><a class="switch-link" href="/extras/">Clases extras</a><a class="back" href="/">Volver al portal</a></nav>
     <header>
         <div>
             <h1>Clases particulares</h1>

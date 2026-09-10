@@ -1,0 +1,123 @@
+.switch-link {
+  color: #6337ee;
+  text-decoration: none;
+  font-weight: 700;
+  font-size: 13px;
+}
+.extra-slot {
+  border: 1px solid #e1e5f1;
+  border-radius: 12px;
+  padding: 15px;
+  margin: 10px 0;
+}
+.extra-slot-heading,
+.extra-slot-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+.extra-slot-heading span,
+.extra-slot p,
+.extra-slot-meta {
+  color: var(--muted);
+  font-size: 13px;
+}
+.extra-slot h3 {
+  margin: 10px 0 4px;
+  font-size: 16px;
+}
+.extra-slot-meta {
+  border-top: 1px solid #edf0f6;
+  padding-top: 10px;
+  margin-top: 10px;
+}
+.choose-extra {
+  display: inline-block;
+  margin-top: 12px;
+  color: #6337ee;
+  font-weight: 700;
+}
+.contact-note {
+  background: #fff1f8;
+  border-radius: 10px;
+  padding: 12px;
+}
+@media (max-width: 800px) {
+  nav .switch-link { display: inline; margin-left: auto; }
+  nav .back { display: none; }
+  .extra-slot-meta { display: block; }
+  .extra-slot-meta span { display: block; margin-top: 4px; }
+}
+.attendance-main { display: block; max-width: 760px; margin: 0 auto; }
+.wizard-main { display: block; max-width: 620px; margin: 0 auto; }
+.sessions-hidden { display: none; }
+.header-actions { display: flex; gap: 8px; margin-top: 18px; }
+.header-action.active { background: #dcf8e5; color: #168641; }
+.wizard-card { margin-bottom: 16px; }
+.wizard-form { display: grid; gap: 16px; }
+.wizard-form > label, .wizard-form > div > label { display: grid; gap: 6px; font-weight: 700; }
+.field-label { display: block; font-weight: 700; margin-bottom: 7px; }
+.coach-options { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+.coach-option { min-height: 52px; border: 2px solid #dce1ef; border-radius: 12px; background: #fff; color: #18213b; font-weight: 700; cursor: pointer; }
+.coach-option.selected, .coach-option:hover { background: #dcf8e5; border-color: #168641; color: #168641; }
+.next-button { justify-self: end; border: 0; background: #6337ee; color: white; border-radius: 12px; padding: 12px 20px; font-weight: 800; cursor: pointer; }
+.next-button span { font-size: 20px; vertical-align: middle; }
+.athlete-card { border: 1px solid #e1e5f1; border-radius: 14px; overflow: hidden; }
+.athlete-card-header { display: flex; justify-content: space-between; padding: 14px; background: #fff1f8; color: #6337ee; }
+.athlete-option { display: flex !important; grid-template-columns: none; align-items: center; gap: 12px; padding: 14px; border-top: 1px solid #edf0f6; cursor: pointer; }
+.athlete-option input { width: 21px; height: 21px; accent-color: #6337ee; }
+.athlete-option span { display: grid; gap: 3px; }
+.athlete-option small { color: var(--muted); font-weight: 400; }
+.create-button { width: 100%; }
+.filter-card { margin-bottom: 16px; }
+.section-toolbar { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.section-toolbar h2 { margin: 0; }
+.create-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+.fixed-price { background: #fff1f8; border-radius: 10px; padding: 12px; color: #6337ee; }
+.header-action { display: inline-block; margin-top: 18px; padding: 12px 16px; border-radius: 12px; background: white; color: #6337ee; text-decoration: none; font-weight: 800; }
+.open-sessions { background: #f5f7fc; padding: 18px 3%; }
+.open-sessions-inner { max-width: 760px; margin: 0 auto; }
+.open-session-card { display: flex; justify-content: space-between; gap: 16px; align-items: end; background: white; border-radius: 14px; padding: 16px; margin-top: 12px; box-shadow: 0 4px 16px #2221; }
+.open-session-card p { margin: 6px 0 0; color: var(--muted); font-size: 13px; }
+.close-session-form { display: flex; align-items: end; gap: 8px; }
+.close-session-form label { display: grid; gap: 5px; font-size: 12px; font-weight: 700; }
+.close-session-form input { width: 130px; }
+.close-button { white-space: nowrap; }
+.form-error { background: #ffe4ef; color: #b24b89; border-radius: 10px; padding: 8px 12px; }
+.form-error p { margin: 4px 0; }
+.attendance-filter { display: grid; gap: 12px; }
+.attendance-filter label { display: grid; gap: 6px; font-weight: 700; }
+.attendance-filter input, .attendance-filter select { width: 100%; }
+.attendance-flash { background: #dcf8e5; color: #168641; border-radius: 10px; padding: 12px; font-weight: 700; }
+.attendance-session { margin-top: 16px; }
+.session-heading { display: flex; justify-content: space-between; gap: 12px; }
+.session-heading h2 { display: flex; align-items: center; gap: 8px; }
+.session-heading h2 b { display: inline-grid; place-items: center; background: var(--purple); color: white; border-radius: 50%; width: 34px; height: 34px; font-size: 16px; }
+.session-heading p, .session-meta { color: var(--muted); }
+.session-price { color: #6337ee; font-weight: 800; text-align: right; }
+.session-price small { color: var(--muted); font-weight: 600; }
+.attendance-list { border-top: 1px solid #edf0f6; margin-top: 14px; }
+.attendance-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid #edf0f6; }
+.attendance-row div:first-child { display: grid; gap: 3px; }
+.attendance-row small { color: var(--muted); }
+.attendance-actions form { display: flex; gap: 6px; }
+.mark { width: 42px; height: 42px; border-radius: 50%; border: 1px solid #dce1ef; background: white; color: #65708f; font-weight: 800; cursor: pointer; font-size: 18px; }
+.mark.present.selected, .mark.present:hover { background: #dcf8e5; color: #168641; border-color: #168641; }
+.mark.absent.selected, .mark.absent:hover { background: #ffe4ef; color: #b24b89; border-color: #b24b89; }
+.mark.excused.selected, .mark.excused:hover { background: #fff1d8; color: #ab6b1b; border-color: #ab6b1b; }
+@media (max-width: 800px) {
+  .session-heading h2 { font-size: 17px; }
+  .attendance-row { align-items: flex-start; }
+  .attendance-actions form { gap: 4px; }
+  .mark { width: 40px; height: 40px; }
+  .section-toolbar { align-items: flex-start; flex-direction: column; }
+  .section-toolbar .button { width: 100%; text-align: center; }
+  .create-grid { grid-template-columns: 1fr; }
+  .wizard-main { padding-left: 14px; padding-right: 14px; }
+  .next-button { width: 100%; }
+}
+@media (max-width: 800px) {
+  .open-session-card { display: block; }
+  .close-session-form { margin-top: 14px; display: grid; grid-template-columns: 1fr; }
+  .close-session-form input, .close-session-form .button { width: 100%; }
+}

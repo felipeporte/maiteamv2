@@ -76,6 +76,9 @@ CREATE TABLE IF NOT EXISTS clases (
     asistencia ENUM('pendiente','presente','ausente','justificada') NOT NULL DEFAULT 'pendiente',
     asistencia_notas VARCHAR(255) DEFAULT NULL,
     notas VARCHAR(255) DEFAULT NULL,
+    clase_extra_id INT UNSIGNED DEFAULT NULL,
+    valor_clase DECIMAL(10,2) DEFAULT NULL,
+    prorrateo_pista DECIMAL(10,2) DEFAULT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
     CONSTRAINT fk_clases_deportistas
@@ -84,6 +87,23 @@ CREATE TABLE IF NOT EXISTS clases (
     CONSTRAINT fk_clases_coaches
         FOREIGN KEY (coach_id) REFERENCES coaches(id)
         ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS clases_extras (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    competencia_id INT UNSIGNED DEFAULT NULL,
+    evento_federado_id INT UNSIGNED DEFAULT NULL,
+    coach_id INT UNSIGNED NOT NULL,
+    fecha DATE NOT NULL,
+    duracion_min SMALLINT UNSIGNED DEFAULT NULL,
+    valor_clase DECIMAL(10,2) NOT NULL DEFAULT 10000.00,
+    costo_pista DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+    estado ENUM('programada','realizada','anulada') NOT NULL DEFAULT 'programada',
+    notas VARCHAR(255) DEFAULT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT fk_clases_extras_competencia FOREIGN KEY (competencia_id) REFERENCES competencias(id) ON DELETE SET NULL ON UPDATE CASCADE,
+    CONSTRAINT fk_clases_extras_coach FOREIGN KEY (coach_id) REFERENCES coaches(id) ON DELETE RESTRICT ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS pagos (
@@ -187,6 +207,8 @@ CREATE INDEX idx_competencias_fecha_inicio ON competencias (fecha_inicio);
 CREATE INDEX idx_clases_deportista ON clases (deportista_id);
 CREATE INDEX idx_clases_coach ON clases (coach_id);
 CREATE INDEX idx_clases_fecha ON clases (fecha);
+CREATE INDEX idx_clases_extra ON clases (clase_extra_id);
+CREATE INDEX idx_clases_extras_fecha ON clases_extras (fecha);
 CREATE INDEX idx_pagos_apoderado ON pagos (apoderado_id);
 CREATE INDEX idx_pagos_coach ON pagos (coach_id);
 CREATE INDEX idx_transferencias_coach ON transferencias_coaches (coach_id);

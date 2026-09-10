@@ -4,10 +4,14 @@
 /** @var array $estados */
 /** @var string $fecha */
 /** @var string|null $flash */
+/** @var array $eventos_federados */
+/** @var array $niveles_asistencia */
+/** @var int $evento_id */
+/** @var string $nivel */
 
 $selectedDate = $fecha ?? date('Y-m-d');
 ?>
-<section class="page">
+<section class="page asistencia-page">
     <div class="page-header">
         <div>
             <h1>Asistencia</h1>
@@ -17,6 +21,8 @@ $selectedDate = $fecha ?? date('Y-m-d');
             <input type="hidden" name="page" value="asistencia">
             <label for="fecha">Fecha</label>
             <input id="fecha" name="fecha" type="date" value="<?= e($selectedDate) ?>">
+            <select name="evento_id"><option value="0">Todos los eventos</option><?php foreach ($eventos_federados as $evento): ?><option value="<?= e((string) $evento['id']) ?>" <?= $evento_id === (int) $evento['id'] ? 'selected' : '' ?>><?= e($evento['nombre'].' · '.$evento['nivel']) ?></option><?php endforeach; ?></select>
+            <select name="nivel"><option value="">Todos los niveles</option><?php foreach ($niveles_asistencia as $nivelOption): ?><option value="<?= e($nivelOption) ?>" <?= $nivel === $nivelOption ? 'selected' : '' ?>><?= e($nivelOption) ?></option><?php endforeach; ?></select>
             <button class="button ghost" type="submit">Ver</button>
         </form>
     </div>
@@ -75,6 +81,8 @@ $selectedDate = $fecha ?? date('Y-m-d');
                                 <form method="post" action="<?= e(base_url('/?page=asistencia&fecha=' . rawurlencode($selectedDate))) ?>" class="form">
                                     <input type="hidden" name="id" value="<?= e((string) $clase['id']) ?>">
                                     <input type="hidden" name="fecha" value="<?= e($selectedDate) ?>">
+                                    <input type="hidden" name="evento_id" value="<?= e((string) $evento_id) ?>">
+                                    <input type="hidden" name="nivel" value="<?= e($nivel) ?>">
 
                                     <label>
                                         Estado
@@ -86,6 +94,12 @@ $selectedDate = $fecha ?? date('Y-m-d');
                                             <?php endforeach; ?>
                                         </select>
                                     </label>
+
+                                    <div class="attendance-quick-actions" aria-label="Marcación rápida">
+                                        <button type="submit" name="asistencia" value="presente" class="attendance-quick present">✓ Presente</button>
+                                        <button type="submit" name="asistencia" value="ausente" class="attendance-quick absent">× Ausente</button>
+                                        <button type="submit" name="asistencia" value="justificada" class="attendance-quick excused">Justificada</button>
+                                    </div>
 
                                     <label>
                                         Notas

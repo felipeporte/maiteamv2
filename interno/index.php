@@ -728,6 +728,39 @@ if ($page === 'clases') {
     $action = $_GET['action'] ?? 'list';
     $flash = $_GET['flash'] ?? null;
 
+    if ($action === 'extra-create') {
+        $selectedEventoId = (int) ($_GET['evento_id'] ?? 0);
+        $blank = ['competencia_id' => 0, 'evento_federado_id' => $selectedEventoId, 'coach_id' => 0, 'fecha' => '', 'duracion_min' => 60, 'valor_clase' => '', 'costo_pista' => '', 'estado' => 'programada', 'notas' => ''];
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $form = [
+                'competencia_id' => (int) ($_POST['competencia_id'] ?? 0), 'evento_federado_id' => (int) ($_POST['evento_federado_id'] ?? 0), 'coach_id' => (int) ($_POST['coach_id'] ?? 0),
+                'fecha' => trim($_POST['fecha'] ?? ''), 'duracion_min' => (int) ($_POST['duracion_min'] ?? 0),
+                'valor_clase' => (float) ($_POST['valor_clase'] ?? 0), 'costo_pista' => (float) ($_POST['costo_pista'] ?? 0),
+                'estado' => $_POST['estado'] ?? 'programada', 'notas' => trim($_POST['notas'] ?? ''),
+            ];
+            $ids = (array) ($_POST['deportistas'] ?? []);
+            $errors = [];
+            if ($form['coach_id'] <= 0) $errors[] = 'Debes seleccionar un coach.';
+            if ($form['evento_federado_id'] <= 0) $errors[] = 'Debes seleccionar un evento federado.';
+            if ($form['fecha'] === '') $errors[] = 'La fecha es obligatoria.';
+            $form['valor_clase'] = 10000.00;
+            if ($form['costo_pista'] < 0) $errors[] = 'El costo de pista no puede ser negativo.';
+            if (count(array_filter(array_map('intval', $ids))) === 0) $errors[] = 'Selecciona al menos una deportista.';
+            if (empty($errors)) {
+                try {
+                    clases_extras_create($form, $ids);
+                    redirect(base_url('/?page=clases&flash=extra-created'));
+                } catch (InvalidArgumentException $e) {
+                    $errors[] = $e->getMessage();
+                }
+            }
+            $blank = $form;
+        }
+        $eventoDeportistas = deportistas_evento_federado_options((int) ($blank['evento_federado_id'] ?? 0));
+        render('clases/extra-form', ['title' => 'Nueva clase extra - Club MaiTeam', 'page' => $page, 'errors' => $errors ?? [], 'clase_extra' => $blank, 'deportistas' => $eventoDeportistas, 'coaches' => coaches_options(), 'competencias' => competencias_options(), 'eventos_federados' => eventos_federados_clases_options(), 'selected_deportistas' => array_map('intval', (array) ($_POST['deportistas'] ?? []))]);
+        exit;
+    }
+
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $form = [
             'deportista_id' => (int) ($_POST['deportista_id'] ?? 0),
@@ -840,6 +873,7 @@ if ($page === 'clases') {
         'page' => $page,
         'flash' => $flash,
         'clases' => clases_all(),
+        'clases_extras' => clases_extras_all(),
     ]);
     exit;
 }
@@ -849,6 +883,8 @@ $page = $_GET['page'] ?? 'home';
 if ($page === 'asistencia') {
     $flash = $_GET['flash'] ?? null;
     $fecha = trim($_GET['fecha'] ?? date('Y-m-d'));
+    $eventoId = (int) ($_GET['evento_id'] ?? 0);
+    $nivel = trim((string) ($_GET['nivel'] ?? ''));
 
     if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $fecha)) {
         $fecha = date('Y-m-d');
@@ -857,6 +893,8 @@ if ($page === 'asistencia') {
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $id = (int) ($_POST['id'] ?? 0);
         $fecha = trim($_POST['fecha'] ?? $fecha);
+        $eventoId = (int) ($_POST['evento_id'] ?? $eventoId);
+        $nivel = trim((string) ($_POST['nivel'] ?? $nivel));
         $asistencia = trim($_POST['asistencia'] ?? 'pendiente');
         $asistenciaNotas = trim($_POST['asistencia_notas'] ?? '');
         $estadosPermitidos = array_keys(asistencia_estados());
@@ -866,7 +904,7 @@ if ($page === 'asistencia') {
                 'asistencia' => $asistencia,
                 'asistencia_notas' => $asistenciaNotas,
             ]);
-            redirect(base_url('/?page=asistencia&fecha=' . rawurlencode($fecha) . '&flash=updated'));
+            redirect(base_url('/?page=asistencia&fecha=' . rawurlencode($fecha) . '&evento_id=' . $eventoId . '&nivel=' . rawurlencode($nivel) . '&flash=updated'));
         }
 
         redirect(base_url('/?page=asistencia&fecha=' . rawurlencode($fecha) . '&flash=error'));
@@ -877,9 +915,13 @@ if ($page === 'asistencia') {
         'page' => $page,
         'flash' => $flash,
         'fecha' => $fecha,
-        'asistencias' => asistencia_clases_por_fecha($fecha),
-        'resumen' => asistencia_resumen_por_fecha($fecha),
+        'asistencias' => asistencia_clases_por_fecha($fecha, $eventoId, $nivel),
+        'resumen' => asistencia_resumen_por_fecha($fecha, $eventoId, $nivel),
         'estados' => asistencia_estados(),
+        'eventos_federados' => eventos_federados_clases_options(),
+        'niveles_asistencia' => ['Formativo', 'Escuela', 'Promotional', 'Internacional'],
+        'evento_id' => $eventoId,
+        'nivel' => $nivel,
     ]);
     exit;
 }
