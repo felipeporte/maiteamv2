@@ -141,8 +141,9 @@ function deportistas_evento_federado_options(int $eventoId): array
 
 function deportistas_nivel_extra_options(string $nivel): array
 {
+    $nivelConsulta = $nivel === 'Internacional' ? 'International' : $nivel;
     $stmt = db()->prepare('SELECT DISTINCT d.id, d.nombre, a.nombre AS apoderado_nombre, dmc.nivel FROM deportistas d INNER JOIN apoderados a ON a.id = d.apoderado_id INNER JOIN deportista_modalidades_competencia dmc ON dmc.deportista_id = d.id WHERE d.activo = 1 AND dmc.nivel = :nivel ORDER BY d.nombre');
-    $stmt->execute(['nivel' => $nivel]);
+    $stmt->execute(['nivel' => $nivelConsulta]);
     return $stmt->fetchAll();
 }
 
