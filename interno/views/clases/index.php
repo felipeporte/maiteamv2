@@ -2,6 +2,7 @@
 /** @var array $clases */
 /** @var string|null $flash */
 /** @var array $clases_extras */
+/** @var string|null $mes */
 ?>
 <section class="page">
     <div class="page-header">
@@ -10,6 +11,7 @@
             <p>Control de clases, inscritos y valores adeudados del mes.</p>
         </div>
         <div class="form-actions">
+            <form method="get" action="<?= e(base_url('/')) ?>" class="month-filter"><input type="hidden" name="page" value="clases"><label>Mes<input type="month" name="mes" value="<?= e($mes ?? '') ?>"></label><button class="button ghost" type="submit">Filtrar</button><?php if ($mes !== null): ?><a class="link" href="<?= e(base_url('/?page=clases')) ?>">Ver todos</a><?php endif; ?></form>
             <a class="button ghost" href="<?= e(base_url('/?page=clases&action=create')) ?>">Nueva clase</a>
             <a class="button" href="/extras/">Generar extras</a>
         </div>

@@ -2,7 +2,7 @@
 declare(strict_types=1);
 require __DIR__ . '/../interno/src/bootstrap.php';
 
-$niveles = ['Formativo', 'Escuela', 'Promotional', 'Internacional'];
+$niveles = ['Todas', 'Formativo', 'Escuela', 'Promotional', 'Internacional'];
 $fecha = preg_match('/^\d{4}-\d{2}-\d{2}$/', (string) ($_GET['fecha'] ?? '')) ? (string) $_GET['fecha'] : date('Y-m-d');
 $nivel = trim((string) ($_GET['nivel'] ?? ''));
 $coachId = (int) ($_GET['coach_id'] ?? 0);

@@ -2,9 +2,15 @@
 
 declare(strict_types=1);
 
-function clases_all(): array
+function clases_all(?string $month = null): array
 {
-    $stmt = db()->query(
+    $where = '';
+    $params = [];
+    if ($month !== null && preg_match('/^\d{4}-\d{2}$/', $month)) {
+        $where = 'WHERE DATE_FORMAT(c.fecha, "%Y-%m") = :month ';
+        $params['month'] = $month;
+    }
+    $sql =
         'SELECT c.id, c.fecha, c.duracion_min, c.tarifa, c.estado, c.notas, c.clase_extra_id, '
         . 'd.nombre AS deportista_nombre, a.nombre AS apoderado_nombre, '
         . 'co.nombre AS coach_nombre, ce.id AS extra_id, ce.valor_clase, ce.costo_pista, '
@@ -16,21 +22,31 @@ function clases_all(): array
         . 'LEFT JOIN clases_extras ce ON ce.id = c.clase_extra_id '
         . 'LEFT JOIN competencias cp ON cp.id = ce.competencia_id '
         . 'LEFT JOIN eventos_federados ef ON ef.id = ce.evento_federado_id '
-        . 'ORDER BY c.fecha DESC, c.id DESC'
-    );
+        . $where
+        . 'ORDER BY c.fecha DESC, c.id DESC';
+    $stmt = db()->prepare($sql);
+    $stmt->execute($params);
     return $stmt->fetchAll();
 }
 
-function clases_extras_all(): array
+function clases_extras_all(?string $month = null): array
 {
-    $stmt = db()->query(
+    $where = '';
+    $params = [];
+    if ($month !== null && preg_match('/^\d{4}-\d{2}$/', $month)) {
+        $where = 'WHERE DATE_FORMAT(ce.fecha, "%Y-%m") = :month ';
+        $params['month'] = $month;
+    }
+    $stmt = db()->prepare(
         'SELECT ce.*, co.nombre AS coach_nombre, cp.nombre AS competencia_nombre, ef.nombre AS evento_federado_nombre, ef.nivel AS evento_federado_nivel, '
         . '(SELECT COUNT(*) FROM clases c WHERE c.clase_extra_id = ce.id) AS participantes '
         . 'FROM clases_extras ce INNER JOIN coaches co ON co.id = ce.coach_id '
         . 'LEFT JOIN competencias cp ON cp.id = ce.competencia_id '
         . 'LEFT JOIN eventos_federados ef ON ef.id = ce.evento_federado_id '
+        . $where
         . 'ORDER BY ce.fecha DESC, ce.id DESC'
     );
+    $stmt->execute($params);
     return $stmt->fetchAll();
 }
 
@@ -141,9 +157,14 @@ function deportistas_evento_federado_options(int $eventoId): array
 
 function deportistas_nivel_extra_options(string $nivel): array
 {
-    $nivelConsulta = $nivel === 'Internacional' ? 'International' : $nivel;
-    $stmt = db()->prepare('SELECT DISTINCT d.id, d.nombre, a.nombre AS apoderado_nombre, dmc.nivel FROM deportistas d INNER JOIN apoderados a ON a.id = d.apoderado_id INNER JOIN deportista_modalidades_competencia dmc ON dmc.deportista_id = d.id WHERE d.activo = 1 AND dmc.nivel = :nivel ORDER BY d.nombre');
-    $stmt->execute(['nivel' => $nivelConsulta]);
+    $conditions = ['d.activo = 1'];
+    $params = [];
+    if ($nivel !== 'Todas') {
+        $conditions[] = 'dmc.nivel = :nivel';
+        $params['nivel'] = $nivel === 'Internacional' ? 'International' : $nivel;
+    }
+    $stmt = db()->prepare('SELECT d.id, d.nombre, a.nombre AS apoderado_nombre, GROUP_CONCAT(DISTINCT dmc.nivel ORDER BY dmc.nivel SEPARATOR ", ") AS nivel FROM deportistas d INNER JOIN apoderados a ON a.id = d.apoderado_id INNER JOIN deportista_modalidades_competencia dmc ON dmc.deportista_id = d.id WHERE ' . implode(' AND ', $conditions) . ' GROUP BY d.id, d.nombre, a.nombre ORDER BY d.nombre');
+    $stmt->execute($params);
     return $stmt->fetchAll();
 }
 

@@ -727,6 +727,7 @@ $page = $_GET['page'] ?? 'home';
 if ($page === 'clases') {
     $action = $_GET['action'] ?? 'list';
     $flash = $_GET['flash'] ?? null;
+    $month = preg_match('/^\d{4}-\d{2}$/', (string) ($_GET['mes'] ?? '')) ? (string) $_GET['mes'] : null;
 
     if ($action === 'extra-create') {
         $selectedEventoId = (int) ($_GET['evento_id'] ?? 0);
@@ -872,8 +873,9 @@ if ($page === 'clases') {
         'title' => 'Clases - Club MaiTeam',
         'page' => $page,
         'flash' => $flash,
-        'clases' => clases_all(),
-        'clases_extras' => clases_extras_all(),
+        'clases' => clases_all($month),
+        'clases_extras' => clases_extras_all($month),
+        'mes' => $month,
     ]);
     exit;
 }
