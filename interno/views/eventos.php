@@ -686,6 +686,7 @@ if (in_array($action, ['list', 'create'], true)): ?>
                                     <th>Subnivel</th>
                                     <th>Categoria</th>
                                     <th>Estado</th>
+                                    <th>Acompañamiento</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -693,6 +694,7 @@ if (in_array($action, ['list', 'create'], true)): ?>
                                     <?php
                                     $inscrito = (int) ($deportista['inscripcion_id'] ?? 0) > 0;
                                     $cobroInscripcion = $cobrosPorDeportistaTipo[(string) ($deportista['deportista_id'] ?? '')]['inscripcion'] ?? null;
+                                    $cobroAcompanamiento = $cobrosPorDeportistaTipo[(string) ($deportista['deportista_id'] ?? '')]['acompanamiento'] ?? null;
                                     $estadoPago = $inscrito
                                         ? (string) ($cobroInscripcion['estado_pago'] ?? $deportista['estado_pago'] ?? 'pendiente')
                                         : 'pendiente';
@@ -751,6 +753,15 @@ if (in_array($action, ['list', 'create'], true)): ?>
                                             <?php else: ?>
                                                 <span class="chip muted">Pendiente</span>
                                                 <div class="muted"><?= e($formatMoney($montoModalidad)) ?> por modalidad</div>
+                                            <?php endif; ?>
+                                        </td>
+                                        <td>
+                                            <?php if (!$inscrito || $cobroAcompanamiento === null): ?>
+                                                <span class="chip muted">No solicitado</span>
+                                            <?php else: ?>
+                                                <?php $estadoAcompanamiento = (string) ($cobroAcompanamiento['estado_pago'] ?? 'pendiente'); ?>
+                                                <span class="chip"><?= e($inscripcionEstadoLabels[$estadoAcompanamiento] ?? $estadoAcompanamiento) ?></span>
+                                                <div class="muted"><?= e($formatMoney($cobroAcompanamiento['monto'] ?? 0)) ?></div>
                                             <?php endif; ?>
                                         </td>
                                     </tr>

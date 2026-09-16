@@ -11,6 +11,9 @@
 !.env.example
 .codex/
 
+# macOS metadata
+.DS_Store
+
 # Generated frontend files and dependencies
 node_modules/
 
