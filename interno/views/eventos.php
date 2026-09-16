@@ -649,6 +649,12 @@ if (in_array($action, ['list', 'create'], true)): ?>
         ?>
 
         <div class="eventos-inscripciones-section">
+            <?php
+            $cobrosPorDeportistaTipo = [];
+            foreach ($cobros as $cobro) {
+                $cobrosPorDeportistaTipo[(string) ($cobro['deportista_id'] ?? '')][(string) ($cobro['tipo_cobro'] ?? '')] = $cobro;
+            }
+            ?>
             <article class="ficha-card ficha-card-compact eventos-inscripciones-card">
                 <div class="ficha-card-head ficha-card-head-split">
                     <div>
@@ -686,7 +692,10 @@ if (in_array($action, ['list', 'create'], true)): ?>
                                 <?php foreach ($deportistas_elegibles as $deportista): ?>
                                     <?php
                                     $inscrito = (int) ($deportista['inscripcion_id'] ?? 0) > 0;
-                                    $estadoPago = (string) ($deportista['estado_pago'] ?? 'pendiente');
+                                    $cobroInscripcion = $cobrosPorDeportistaTipo[(string) ($deportista['deportista_id'] ?? '')]['inscripcion'] ?? null;
+                                    $estadoPago = $inscrito
+                                        ? (string) ($cobroInscripcion['estado_pago'] ?? $deportista['estado_pago'] ?? 'pendiente')
+                                        : 'pendiente';
                                     $formId = 'evento-inscripcion-' . (int) $deportista['deportista_id'] . '-' . (int) $deportista['asignacion_id'];
                                     $competenciaLabel = trim((string) ($deportista['modalidad_nombre'] ?? ''));
                                     $programasDisponibles = evento_federado_hoja_programas($deportista);
@@ -754,10 +763,6 @@ if (in_array($action, ['list', 'create'], true)): ?>
         </div>
 
         <?php
-        $cobrosPorDeportistaTipo = [];
-        foreach ($cobros as $cobro) {
-            $cobrosPorDeportistaTipo[(string) ($cobro['deportista_id'] ?? '')][(string) ($cobro['tipo_cobro'] ?? '')] = $cobro;
-        }
         $inscripcionesAgrupadas = [];
         foreach ($inscripciones as $inscripcion) {
             if (($inscripcion['estado_pago'] ?? '') === 'anulado') {
