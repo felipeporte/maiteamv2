@@ -326,27 +326,59 @@ function deportista_modalidades_competencia_sync(int $deportistaId, array $assig
     }
 
     $pdo = db();
-    $deleteStmt = $pdo->prepare(
-        'DELETE FROM deportista_modalidades_competencia WHERE deportista_id = :deportista_id'
+    $existingStmt = $pdo->prepare(
+        'SELECT id, modalidad_competencia_id FROM deportista_modalidades_competencia '
+        . 'WHERE deportista_id = :deportista_id'
     );
-    $deleteStmt->execute(['deportista_id' => $deportistaId]);
+    $existingStmt->execute(['deportista_id' => $deportistaId]);
+    $existingByModality = [];
+    foreach ($existingStmt->fetchAll() as $existing) {
+        $existingByModality[(int) $existing['modalidad_competencia_id']] = (int) $existing['id'];
+    }
 
-    if (!empty($rows)) {
-        $insertStmt = $pdo->prepare(
-            'INSERT INTO deportista_modalidades_competencia '
-            . '(deportista_id, modalidad_competencia_id, nivel, subnivel, categoria) '
-            . 'VALUES (:deportista_id, :modalidad_competencia_id, :nivel, :subnivel, :categoria)'
-        );
+    $updateStmt = $pdo->prepare(
+        'UPDATE deportista_modalidades_competencia '
+        . 'SET nivel = :nivel, subnivel = :subnivel, categoria = :categoria '
+        . 'WHERE id = :id'
+    );
+    $insertStmt = $pdo->prepare(
+        'INSERT INTO deportista_modalidades_competencia '
+        . '(deportista_id, modalidad_competencia_id, nivel, subnivel, categoria) '
+        . 'VALUES (:deportista_id, :modalidad_competencia_id, :nivel, :subnivel, :categoria)'
+    );
+    $submittedModalityIds = [];
+    foreach ($rows as $row) {
+        $modalityId = (int) $row['modalidad_competencia_id'];
+        $submittedModalityIds[] = $modalityId;
+        $values = [
+            'nivel' => $row['nivel'] !== '' ? $row['nivel'] : null,
+            'subnivel' => $row['subnivel'] !== '' ? $row['subnivel'] : null,
+            'categoria' => $row['categoria'] !== '' ? $row['categoria'] : null,
+        ];
 
-        foreach ($rows as $row) {
-            $insertStmt->execute([
-                'deportista_id' => $deportistaId,
-                'modalidad_competencia_id' => $row['modalidad_competencia_id'],
-                'nivel' => $row['nivel'] !== '' ? $row['nivel'] : null,
-                'subnivel' => $row['subnivel'] !== '' ? $row['subnivel'] : null,
-                'categoria' => $row['categoria'] !== '' ? $row['categoria'] : null,
-            ]);
+        if (isset($existingByModality[$modalityId])) {
+            $updateStmt->execute($values + ['id' => $existingByModality[$modalityId]]);
+            continue;
         }
+
+        $insertStmt->execute($values + [
+            'deportista_id' => $deportistaId,
+            'modalidad_competencia_id' => $modalityId,
+        ]);
+    }
+
+    $removedIds = [];
+    foreach ($existingByModality as $modalityId => $assignmentId) {
+        if (!in_array($modalityId, $submittedModalityIds, true)) {
+            $removedIds[] = $assignmentId;
+        }
+    }
+    if (!empty($removedIds)) {
+        $placeholders = implode(', ', array_fill(0, count($removedIds), '?'));
+        $deleteStmt = $pdo->prepare(
+            'DELETE FROM deportista_modalidades_competencia WHERE id IN (' . $placeholders . ')'
+        );
+        $deleteStmt->execute($removedIds);
     }
 }
 
