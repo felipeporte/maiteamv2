@@ -11,11 +11,20 @@
             <input type="hidden" name="admin_action" value="monitor">
             <input name="nombre" placeholder="Nombre" required>
             <input name="email" placeholder="Email">
+            <input type="number" name="valor_base" min="0" step="1000" placeholder="Valor por clase (opcional)">
             <label><input type="checkbox" name="activo" checked> Activo</label>
             <button class="button">Agregar monitor</button>
         </form>
         <?php foreach ($monitores as $m): ?>
-            <p><?= e($m['nombre']) ?> — <?= ((int) $m['activo']) ? 'Activo' : 'Inactivo' ?></p>
+            <div>
+                <p><?= e($m['nombre']) ?> — <?= ((int) $m['activo']) ? 'Activo' : 'Inactivo' ?></p>
+                <form method="post">
+                    <input type="hidden" name="admin_action" value="monitor_value">
+                    <input type="hidden" name="id" value="<?= (int) $m['id'] ?>">
+                    <input type="number" name="valor_base" min="0" step="1000" value="<?= $m['valor_base'] === null ? '' : e((string) $m['valor_base']) ?>" placeholder="Valor general">
+                    <button class="button ghost" type="submit">Guardar valor</button>
+                </form>
+            </div>
         <?php endforeach; ?>
     </div>
 

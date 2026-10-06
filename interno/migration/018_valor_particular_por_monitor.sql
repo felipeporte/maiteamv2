@@ -1,0 +1,6 @@
+START TRANSACTION;
+
+ALTER TABLE particular_monitores
+    ADD COLUMN valor_base DECIMAL(10,2) DEFAULT NULL AFTER email;
+
+COMMIT;

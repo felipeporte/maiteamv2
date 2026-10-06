@@ -34,12 +34,12 @@ function particulares_agenda(string $fecha): array {
 
 function particulares_generar_bloques(string $desde, string $hasta): int {
     $cfg=particulares_config(); $dur=(int)($cfg['duracion_min']??60); $pdo=db(); $n=0;
-    $mon=$pdo->query('SELECT id FROM particular_monitores WHERE activo=1')->fetchAll(PDO::FETCH_COLUMN);
+    $mon=$pdo->query('SELECT id,valor_base FROM particular_monitores WHERE activo=1')->fetchAll();
     $rules=$pdo->query('SELECT monitor_id,dia_semana,hora_inicio,hora_fin FROM particular_disponibilidad WHERE activo=1')->fetchAll();
     $exceptionsStmt=$pdo->prepare('SELECT monitor_id,fecha FROM particular_excepciones WHERE fecha BETWEEN :desde AND :hasta');
     $exceptionsStmt->execute(['desde'=>$desde,'hasta'=>$hasta]);
     $exceptions=[];
     foreach($exceptionsStmt->fetchAll() as $exception) $exceptions[(int)$exception['monitor_id']][(string)$exception['fecha']]=true;
-    for($d=new DateTime($desde);$d->format('Y-m-d')<=$hasta;$d->modify('+1 day')) { $date=$d->format('Y-m-d'); $dow=(int)$d->format('w'); foreach($rules as $r) if((int)$r['dia_semana']===$dow) foreach($mon as $mid) if(($r['monitor_id']===null||(int)$r['monitor_id']===(int)$mid) && empty($exceptions[(int)$mid][$date])) { $start=new DateTime($date.' '.$r['hora_inicio']); $end=new DateTime($date.' '.$r['hora_fin']); while($start<$end){$finish=(clone $start)->modify("+$dur minutes"); if($finish>$end) break; $s=$pdo->prepare('INSERT IGNORE INTO particular_bloques (monitor_id,fecha,inicio,fin,valor_base) VALUES (:m,:f,:i,:e,:v)');$s->execute(['m'=>$mid,'f'=>$date,'i'=>$start->format('Y-m-d H:i:s'),'e'=>$finish->format('Y-m-d H:i:s'),'v'=>$cfg['valor_base']]);$n+=(int)$s->rowCount();$start=$finish;}}
+    for($d=new DateTime($desde);$d->format('Y-m-d')<=$hasta;$d->modify('+1 day')) { $date=$d->format('Y-m-d'); $dow=(int)$d->format('w'); foreach($rules as $r) if((int)$r['dia_semana']===$dow) foreach($mon as $monitor) { $mid=(int)$monitor['id']; if(($r['monitor_id']===null||(int)$r['monitor_id']===$mid) && empty($exceptions[$mid][$date])) { $valor=$monitor['valor_base']===null?(float)$cfg['valor_base']:(float)$monitor['valor_base']; $start=new DateTime($date.' '.$r['hora_inicio']); $end=new DateTime($date.' '.$r['hora_fin']); while($start<$end){$finish=(clone $start)->modify("+$dur minutes"); if($finish>$end) break; $s=$pdo->prepare('INSERT IGNORE INTO particular_bloques (monitor_id,fecha,inicio,fin,valor_base) VALUES (:m,:f,:i,:e,:v)');$s->execute(['m'=>$mid,'f'=>$date,'i'=>$start->format('Y-m-d H:i:s'),'e'=>$finish->format('Y-m-d H:i:s'),'v'=>$valor]);$n+=(int)$s->rowCount();$start=$finish;}}}
     } return $n;
 }
