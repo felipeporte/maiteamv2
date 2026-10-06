@@ -22,15 +22,33 @@ if ($page === 'particulares') {
 
 if ($page === 'particulares-admin') {
     if ($_SERVER['REQUEST_METHOD']==='POST' && ($_POST['admin_action']??'')==='validate_transfer') { $id=(int)($_POST['pago_id']??0); if($id>0){$pdo=db();$pdo->beginTransaction();$s=$pdo->prepare("UPDATE particular_pagos SET status='paid',paid_at=NOW(),validado_por=:v,validado_at=NOW() WHERE id=:id AND status='pending'");$s->execute(['id'=>$id,'v'=>'admin']);$pdo->prepare("UPDATE particular_reservas r JOIN particular_pagos p ON p.reserva_id=r.id SET r.estado='confirmed' WHERE p.id=:id AND r.estado='awaiting_payment'")->execute(['id'=>$id]);$pdo->commit();} redirect(base_url('/?page=particulares-admin')); }
+    if ($_SERVER['REQUEST_METHOD']==='POST' && ($_POST['admin_action']??'')==='exception') {
+        $mid=(int)($_POST['monitor_id']??0); $desde=(string)($_POST['desde']??''); $hasta=(string)($_POST['hasta']??$desde); $motivo=trim((string)($_POST['motivo']??''));
+        $validDate=static fn(string $date): bool => (bool)preg_match('/^\d{4}-\d{2}-\d{2}$/',$date);
+        if($mid>0 && $validDate($desde) && $validDate($hasta) && $desde<=$hasta){
+            $pdo=db(); $pdo->beginTransaction(); $created=0; $disabled=0;
+            for($date=new DateTime($desde);$date->format('Y-m-d')<=$hasta;$date->modify('+1 day')){
+                $day=$date->format('Y-m-d'); $s=$pdo->prepare('INSERT IGNORE INTO particular_excepciones(monitor_id,fecha,motivo) VALUES(:m,:f,:r)'); $s->execute(['m'=>$mid,'f'=>$day,'r'=>$motivo?:null]); $created+=(int)$s->rowCount();
+                $s=$pdo->prepare('UPDATE particular_bloques b SET b.activo=0 WHERE b.monitor_id=:m AND b.fecha=:f AND NOT EXISTS (SELECT 1 FROM particular_ocupaciones o WHERE o.bloque_id=b.id)'); $s->execute(['m'=>$mid,'f'=>$day]); $disabled+=(int)$s->rowCount();
+            }
+            $pdo->commit(); redirect(base_url('/?page=particulares-admin&flash='.rawurlencode("Anulación guardada: $created día(s), $disabled bloque(s) desactivado(s).")));
+        }
+        redirect(base_url('/?page=particulares-admin&flash='.rawurlencode('Revisa el monitor y las fechas de la anulación.')));
+    }
+    if ($_SERVER['REQUEST_METHOD']==='POST' && ($_POST['admin_action']??'')==='remove_exception') {
+        $id=(int)($_POST['exception_id']??0); if($id>0){$pdo=db();$pdo->beginTransaction();$s=$pdo->prepare('SELECT monitor_id,fecha FROM particular_excepciones WHERE id=:id');$s->execute(['id'=>$id]);$exception=$s->fetch();if($exception){$pdo->prepare('DELETE FROM particular_excepciones WHERE id=:id')->execute(['id'=>$id]);$pdo->prepare('UPDATE particular_bloques b SET b.activo=1 WHERE b.monitor_id=:m AND b.fecha=:f AND NOT EXISTS (SELECT 1 FROM particular_ocupaciones o WHERE o.bloque_id=b.id)')->execute(['m'=>$exception['monitor_id'],'f'=>$exception['fecha']]);}$pdo->commit();} redirect(base_url('/?page=particulares-admin&flash='.rawurlencode('Anulación quitada.')));
+    }
     if ($_SERVER['REQUEST_METHOD']==='POST' && ($_POST['admin_action']??'')==='availability') { $mid=(int)($_POST['monitor_id']??0); $day=(int)($_POST['dia_semana']??6); $from=$_POST['hora_inicio']??'09:00'; $to=$_POST['hora_fin']??'14:00'; if($from<$to){$s=db()->prepare('INSERT INTO particular_disponibilidad(monitor_id,dia_semana,hora_inicio,hora_fin) VALUES(:m,:d,:f,:t)');$s->execute(['m'=>$mid?:null,'d'=>$day,'f'=>$from,'t'=>$to]);} redirect(base_url('/?page=particulares-admin')); }
     if ($_SERVER['REQUEST_METHOD']==='POST' && ($_POST['admin_action']??'')==='generate') { particulares_generar_bloques($_POST['desde']??date('Y-m-d'),$_POST['hasta']??date('Y-m-d',strtotime('+30 days'))); redirect(base_url('/?page=particulares-admin')); }
     if ($_SERVER['REQUEST_METHOD']==='POST' && ($_POST['admin_action']??'')==='monitor') { $id=(int)($_POST['id']??0); $nombre=trim((string)($_POST['nombre']??'')); $email=trim((string)($_POST['email']??'')); $activo=isset($_POST['activo'])?1:0; if($nombre!==''){ if($id>0){$s=db()->prepare('UPDATE particular_monitores SET nombre=:n,email=:e,activo=:a WHERE id=:id');$s->execute(['n'=>$nombre,'e'=>$email?:null,'a'=>$activo,'id'=>$id]);}else{$s=db()->prepare('INSERT INTO particular_monitores(nombre,email,activo) VALUES(:n,:e,:a)');$s->execute(['n'=>$nombre,'e'=>$email?:null,'a'=>$activo]);}} redirect(base_url('/?page=particulares-admin')); }
     $cfg = particulares_config();
+    $flash = trim((string)($_GET['flash'] ?? ''));
     $monitores = db()->query('SELECT * FROM particular_monitores ORDER BY nombre')->fetchAll();
     $medios = db()->query('SELECT * FROM particular_medios_pago ORDER BY nombre')->fetchAll();
     $reglas = db()->query('SELECT d.*,m.nombre monitor FROM particular_disponibilidad d LEFT JOIN particular_monitores m ON m.id=d.monitor_id ORDER BY d.dia_semana,d.hora_inicio')->fetchAll();
+    $excepciones = db()->query('SELECT e.*,m.nombre monitor FROM particular_excepciones e JOIN particular_monitores m ON m.id=e.monitor_id ORDER BY e.fecha,e.id')->fetchAll();
     $transferencias = db()->query("SELECT p.id,p.charged_amount,p.status,r.id reserva_id,c.nombre cliente,b.fecha,b.inicio,m.nombre monitor FROM particular_pagos p JOIN particular_reservas r ON r.id=p.reserva_id JOIN particular_clientes c ON c.id=r.cliente_id JOIN particular_bloques b ON b.id=r.bloque_id JOIN particular_monitores m ON m.id=b.monitor_id JOIN particular_medios_pago mp ON mp.id=p.medio_pago_id WHERE mp.codigo='transferencia' ORDER BY p.id DESC LIMIT 50")->fetchAll();
-    render('particulares/admin',['title'=>'Administrar particulares - Club MaiTeam','page'=>$page,'cfg'=>$cfg,'monitores'=>$monitores,'medios'=>$medios,'reglas'=>$reglas,'transferencias'=>$transferencias]); exit;
+    render('particulares/admin',['title'=>'Administrar particulares - Club MaiTeam','page'=>$page,'cfg'=>$cfg,'monitores'=>$monitores,'medios'=>$medios,'reglas'=>$reglas,'excepciones'=>$excepciones,'transferencias'=>$transferencias,'flash'=>$flash]); exit;
 }
 
 if ($page === 'socios') {

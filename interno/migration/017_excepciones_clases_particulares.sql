@@ -1,0 +1,13 @@
+START TRANSACTION;
+
+CREATE TABLE IF NOT EXISTS particular_excepciones (
+ id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+ monitor_id INT UNSIGNED NOT NULL,
+ fecha DATE NOT NULL,
+ motivo VARCHAR(255) DEFAULT NULL,
+ created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ UNIQUE KEY uq_particular_excepcion (monitor_id,fecha),
+ FOREIGN KEY (monitor_id) REFERENCES particular_monitores(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+COMMIT;
