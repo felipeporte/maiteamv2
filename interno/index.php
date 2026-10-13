@@ -138,6 +138,26 @@ if ($page === 'socios') {
         exit;
     }
 
+    if ($action === 'payments') {
+        $id = (int) ($_GET['id'] ?? 0);
+        $apoderado = $id > 0 ? apoderado_find($id) : null;
+        if ($apoderado === null) {
+            render('404', [
+                'title' => page_title('404'),
+                'page' => $page,
+            ]);
+            exit;
+        }
+
+        render('apoderados/pagos', [
+            'title' => 'Pagos de ' . $apoderado['nombre'] . ' - Club MaiTeam',
+            'page' => $page,
+            'apoderado' => $apoderado,
+            'resumen' => apoderado_pagos_resumen($id),
+        ]);
+        exit;
+    }
+
     $view = 'apoderados/index';
     render($view, [
         'title' => 'Apoderados - Club MaiTeam',

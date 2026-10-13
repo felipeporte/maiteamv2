@@ -28,7 +28,7 @@
                     <th>Email</th>
                     <th>Direccion</th>
                     <th>Saldo desde inscripción</th>
-                    <th></th>
+                    <th>Acciones</th>
                 </tr>
             </thead>
             <tbody>
@@ -45,6 +45,7 @@
                             <td><?= e($apoderado['direccion']) ?></td>
                             <td>$<?= e(number_format((float) $apoderado['saldo'], 0, ',', '.')) ?></td>
                             <td class="actions">
+                                <a class="link" href="<?= e(base_url('/?page=socios&action=payments&id=' . $apoderado['id'])) ?>">Ver pagos</a>
                                 <a class="link" href="<?= e(base_url('/?page=socios&action=edit&id=' . $apoderado['id'])) ?>">Editar</a>
                                 <form method="post" action="<?= e(base_url('/?page=socios&action=delete')) ?>" onsubmit="return confirm('Eliminar este apoderado?');">
                                     <input type="hidden" name="id" value="<?= e((string) $apoderado['id']) ?>">

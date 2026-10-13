@@ -194,6 +194,62 @@ function apoderado_find(int $id): ?array
     return $row ?: null;
 }
 
+function apoderado_pagos_resumen(int $apoderadoId): array
+{
+    $stmtPagosResumen = db()->prepare(
+        'SELECT COUNT(*) AS cantidad, COALESCE(SUM(monto_total), 0) AS total, MAX(fecha_pago) AS ultima_fecha '
+        . 'FROM pagos WHERE apoderado_id = :apoderado_id'
+    );
+    $stmtPagosResumen->execute(['apoderado_id' => $apoderadoId]);
+    $pagosResumen = $stmtPagosResumen->fetch() ?: [];
+
+    $stmtCuotasResumen = db()->prepare(
+        'SELECT '
+        . 'COUNT(*) AS cantidad, '
+        . 'SUM(CASE WHEN estado = "pagado" THEN 1 ELSE 0 END) AS cantidad_pagadas, '
+        . 'COALESCE(SUM(CASE WHEN estado = "pagado" THEN monto ELSE 0 END), 0) AS total_pagado, '
+        . 'SUM(CASE WHEN estado = "pendiente" THEN 1 ELSE 0 END) AS cantidad_pendientes, '
+        . 'COALESCE(SUM(CASE WHEN estado = "pendiente" THEN monto ELSE 0 END), 0) AS total_pendiente '
+        . 'FROM cuotas_socios WHERE apoderado_id = :apoderado_id'
+    );
+    $stmtCuotasResumen->execute(['apoderado_id' => $apoderadoId]);
+    $cuotasResumen = $stmtCuotasResumen->fetch() ?: [];
+
+    $stmtPagos = db()->prepare(
+        'SELECT p.id, p.fecha_pago, p.periodo_inicio, p.periodo_fin, p.monto_total, p.metodo, p.referencia, '
+        . 'c.nombre AS coach_nombre, '
+        . '(SELECT COUNT(*) FROM pagos_clases pc WHERE pc.pago_id = p.id) AS clases_total '
+        . 'FROM pagos p '
+        . 'LEFT JOIN coaches c ON c.id = p.coach_id '
+        . 'WHERE p.apoderado_id = :apoderado_id '
+        . 'ORDER BY p.fecha_pago DESC, p.id DESC'
+    );
+    $stmtPagos->execute(['apoderado_id' => $apoderadoId]);
+
+    $stmtCuotas = db()->prepare(
+        'SELECT periodo, fecha_pago, monto, estado '
+        . 'FROM cuotas_socios WHERE apoderado_id = :apoderado_id '
+        . 'ORDER BY periodo DESC, id DESC'
+    );
+    $stmtCuotas->execute(['apoderado_id' => $apoderadoId]);
+
+    $totalPagos = (float) ($pagosResumen['total'] ?? 0);
+    $totalCuotasPagadas = (float) ($cuotasResumen['total_pagado'] ?? 0);
+
+    return [
+        'pagos' => $stmtPagos->fetchAll(),
+        'cuotas' => $stmtCuotas->fetchAll(),
+        'total_pagos' => $totalPagos,
+        'cantidad_pagos' => (int) ($pagosResumen['cantidad'] ?? 0),
+        'ultima_fecha_pago' => $pagosResumen['ultima_fecha'] ?? null,
+        'total_cuotas_pagadas' => $totalCuotasPagadas,
+        'cantidad_cuotas_pagadas' => (int) ($cuotasResumen['cantidad_pagadas'] ?? 0),
+        'total_cuotas_pendientes' => (float) ($cuotasResumen['total_pendiente'] ?? 0),
+        'cantidad_cuotas_pendientes' => (int) ($cuotasResumen['cantidad_pendientes'] ?? 0),
+        'total_pagado' => $totalPagos + $totalCuotasPagadas,
+    ];
+}
+
 function apoderado_create(array $data): int
 {
     $stmt = db()->prepare(
