@@ -14,7 +14,8 @@ function apoderados_all_with_saldo(): array
         . 'COALESCE(modalidades.total_modalidades, 0) AS total_modalidades, '
         . 'COALESCE(cuota.total_cuota, 0) AS total_cuota, '
         . 'COALESCE(pagos.total_pagos, 0) AS total_pagos, '
-        . '(COALESCE(modalidades.total_modalidades, 0) + COALESCE(cuota.total_cuota, 0) - COALESCE(pagos.total_pagos, 0)) AS saldo '
+        . 'COALESCE(cuotas_pagadas.total_cuotas_pagadas, 0) AS total_cuotas_pagadas, '
+        . '(COALESCE(modalidades.total_modalidades, 0) + COALESCE(cuota.total_cuota, 0) - COALESCE(pagos.total_pagos, 0) - COALESCE(cuotas_pagadas.total_cuotas_pagadas, 0)) AS saldo '
         . 'FROM apoderados a '
         . 'LEFT JOIN ('
         . '  SELECT d.apoderado_id, '
@@ -45,6 +46,12 @@ function apoderados_all_with_saldo(): array
         . '  AND (i.fecha_fin IS NULL OR i.fecha_fin >= i.fecha_inicio) '
         . '  GROUP BY d.apoderado_id '
         . ') cuota ON cuota.apoderado_id = a.id '
+        . 'LEFT JOIN ('
+        . '  SELECT apoderado_id, SUM(monto) AS total_cuotas_pagadas '
+        . '  FROM cuotas_socios '
+        . '  WHERE estado = "pagado" '
+        . '  GROUP BY apoderado_id '
+        . ') cuotas_pagadas ON cuotas_pagadas.apoderado_id = a.id '
         . 'LEFT JOIN ('
         . '  SELECT apoderado_id, SUM(monto_total) AS total_pagos '
         . '  FROM pagos '
@@ -103,14 +110,16 @@ function apoderado_deuda_modalidad_cuota(int $apoderadoId): array
     $stmtPagos->execute(['apoderado_id' => $apoderadoId]);
     $pagos = (float) ($stmtPagos->fetchColumn() ?? 0);
 
+    $cuotasPagadas = apoderado_cuotas_socios_pagadas($apoderadoId);
     $total = $modalidades + $cuota;
-    $saldo = $total - $pagos;
+    $saldo = $total - $pagos - $cuotasPagadas;
 
     return [
         'modalidades' => $modalidades,
         'cuota' => $cuota,
         'total' => $total,
         'pagos' => $pagos,
+        'cuotas_pagadas' => $cuotasPagadas,
         'saldo' => $saldo,
     ];
 }
@@ -167,6 +176,7 @@ function apoderado_deudas_detalle(int $apoderadoId): array
     );
     $stmtPagos->execute(['apoderado_id' => $apoderadoId]);
     $pagos = (float) ($stmtPagos->fetchColumn() ?? 0);
+    $cuotasPagadas = apoderado_cuotas_socios_pagadas($apoderadoId);
 
     $totalModalidades = 0.0;
     foreach ($modalidades as $row) {
@@ -174,15 +184,27 @@ function apoderado_deudas_detalle(int $apoderadoId): array
     }
     $totalCuota = $cuota ? (float) $cuota['total'] : 0.0;
     $total = $totalModalidades + $totalCuota;
-    $saldo = $total - $pagos;
+    $saldo = $total - $pagos - $cuotasPagadas;
 
     return [
         'modalidades' => $modalidades,
         'cuota' => $cuota,
         'pagos' => $pagos,
+        'cuotas_pagadas' => $cuotasPagadas,
         'total' => $total,
         'saldo' => $saldo,
     ];
+}
+
+function apoderado_cuotas_socios_pagadas(int $apoderadoId): float
+{
+    $stmt = db()->prepare(
+        'SELECT COALESCE(SUM(monto), 0) FROM cuotas_socios '
+        . 'WHERE apoderado_id = :apoderado_id AND estado = "pagado"'
+    );
+    $stmt->execute(['apoderado_id' => $apoderadoId]);
+
+    return (float) ($stmt->fetchColumn() ?? 0);
 }
 
 function apoderado_find(int $id): ?array

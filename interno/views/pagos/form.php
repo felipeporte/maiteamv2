@@ -35,7 +35,8 @@ $isEdit = $action === 'edit';
             $<?= e(number_format((float) $deuda['saldo'], 0, ',', '.')) ?>
             <span class="muted">
                 · Total: $<?= e(number_format((float) $deuda['total'], 0, ',', '.')) ?>
-                · Pagos: $<?= e(number_format((float) $deuda['pagos'], 0, ',', '.')) ?>
+                · Pagos de modalidades: $<?= e(number_format((float) $deuda['pagos'], 0, ',', '.')) ?>
+                · Cuotas socio pagadas: $<?= e(number_format((float) $deuda['cuotas_pagadas'], 0, ',', '.')) ?>
             </span>
         </div>
 
@@ -60,7 +61,8 @@ $isEdit = $action === 'edit';
                     Desde <?= e($deuda['cuota']['fecha_inicio'] ?? '') ?>
                     hasta <?= e($deuda['cuota']['fecha_fin'] ?? '') ?>
                     · <?= e((string) $deuda['cuota']['meses']) ?> meses
-                    · Total $<?= e(number_format((float) $deuda['cuota']['total'], 0, ',', '.')) ?>
+                    · Acumulado $<?= e(number_format((float) $deuda['cuota']['total'], 0, ',', '.')) ?>
+                    · Pagado $<?= e(number_format((float) $deuda['cuotas_pagadas'], 0, ',', '.')) ?>
                 </p>
             <?php else: ?>
                 <p class="muted">Sin cuota registrada.</p>
