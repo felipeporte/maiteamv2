@@ -37,13 +37,14 @@
                     <th>Coach</th>
                     <th>Tarifa</th>
                     <th>Estado</th>
+                    <th>Notas</th>
                     <th></th>
                 </tr>
             </thead>
             <tbody>
                 <?php if (empty($clases)): ?>
                     <tr>
-                        <td colspan="7">Aun no hay clases registradas.</td>
+                        <td colspan="8">Aun no hay clases registradas.</td>
                     </tr>
                 <?php else: ?>
                     <?php foreach ($clases as $clase): ?>
@@ -54,6 +55,7 @@
                             <td><?= e($clase['coach_nombre']) ?></td>
                             <td>$<?= e(number_format((float) $clase['tarifa'], 0, ',', '.')) ?><?php if (!empty($clase['extra_id'])): ?><br><small><?= e($clase['competencia_nombre'] ?? 'Sesión grupal') ?></small><?php endif; ?></td>
                             <td><?= e($clase['estado']) ?></td>
+                            <td class="class-notes"><?= e($clase['notas'] ?? '') ?: '—' ?></td>
                             <td class="actions">
                                 <a class="link" href="<?= e(base_url('/?page=clases&action=edit&id=' . $clase['id'])) ?>">Editar</a>
                                 <form method="post" action="<?= e(base_url('/?page=clases&action=delete')) ?>" onsubmit="return confirm('Eliminar esta clase?');">

@@ -1175,6 +1175,12 @@ textarea {
   font-weight: 800;
 }
 
+.class-notes {
+  max-width: 320px;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
 .table-wrapper tr:last-child td {
   border-bottom: 0;
 }
