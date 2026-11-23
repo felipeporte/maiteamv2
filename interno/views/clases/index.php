@@ -74,12 +74,12 @@
         <h2>Sesiones extras</h2>
         <div class="table-wrapper">
             <table>
-                <thead><tr><th>Fecha</th><th>Competencia</th><th>Coach</th><th>Participantes</th><th>Valor clase</th><th>Pista total</th><th>Total por deportista</th></tr></thead>
+                <thead><tr><th>Fecha</th><th>Competencia</th><th>Coach</th><th>Deportistas del club</th><th>Externos (solo prorrateo)</th><th>Total prorrateo</th><th>Valor clase</th><th>Pista total</th><th>Total por deportista del club</th></tr></thead>
                 <tbody><?php foreach ($clases_extras as $extra): ?><tr>
                     <td><?= e($extra['fecha']) ?></td><td><?= e($extra['competencia_nombre'] ?? 'Sin competencia') ?></td><td><?= e($extra['coach_nombre']) ?></td>
-                    <td><?= e((string) $extra['participantes']) ?></td><td>$<?= e(number_format((float) $extra['valor_clase'], 0, ',', '.')) ?></td>
+                    <td><?= e((string) $extra['participantes']) ?></td><td><?= e((string) ($extra['participantes_externos'] ?? 0)) ?></td><td><?= e((string) ((int) $extra['participantes'] + (int) ($extra['participantes_externos'] ?? 0))) ?></td><td>$<?= e(number_format((float) $extra['valor_clase'], 0, ',', '.')) ?></td>
                     <td>$<?= e(number_format((float) $extra['costo_pista'], 0, ',', '.')) ?></td>
-                    <td>$<?= e(number_format((float) $extra['valor_clase'] + ((float) $extra['costo_pista'] / max(1, (int) $extra['participantes'])), 0, ',', '.')) ?></td>
+                    <td>$<?= e(number_format((float) $extra['valor_clase'] + ((float) $extra['costo_pista'] / max(1, (int) $extra['participantes'] + (int) ($extra['participantes_externos'] ?? 0))), 0, ',', '.')) ?></td>
                 </tr><?php endforeach; ?></tbody>
             </table>
         </div>

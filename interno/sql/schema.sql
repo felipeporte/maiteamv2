@@ -98,6 +98,7 @@ CREATE TABLE IF NOT EXISTS clases_extras (
     duracion_min SMALLINT UNSIGNED DEFAULT NULL,
     valor_clase DECIMAL(10,2) NOT NULL DEFAULT 10000.00,
     costo_pista DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+    participantes_externos INT UNSIGNED NOT NULL DEFAULT 0,
     estado ENUM('programada','realizada','anulada') NOT NULL DEFAULT 'programada',
     notas VARCHAR(255) DEFAULT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,

@@ -770,12 +770,13 @@ if ($page === 'clases') {
 
     if ($action === 'extra-create') {
         $selectedEventoId = (int) ($_GET['evento_id'] ?? 0);
-        $blank = ['competencia_id' => 0, 'evento_federado_id' => $selectedEventoId, 'coach_id' => 0, 'fecha' => '', 'duracion_min' => 60, 'valor_clase' => '', 'costo_pista' => '', 'estado' => 'programada', 'notas' => ''];
+        $blank = ['competencia_id' => 0, 'evento_federado_id' => $selectedEventoId, 'coach_id' => 0, 'fecha' => '', 'duracion_min' => 60, 'valor_clase' => '', 'costo_pista' => '', 'participantes_externos' => 0, 'estado' => 'programada', 'notas' => ''];
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $participantesExternosRaw = filter_var($_POST['participantes_externos'] ?? 0, FILTER_VALIDATE_INT);
             $form = [
                 'competencia_id' => (int) ($_POST['competencia_id'] ?? 0), 'evento_federado_id' => (int) ($_POST['evento_federado_id'] ?? 0), 'coach_id' => (int) ($_POST['coach_id'] ?? 0),
                 'fecha' => trim($_POST['fecha'] ?? ''), 'duracion_min' => (int) ($_POST['duracion_min'] ?? 0),
-                'valor_clase' => (float) ($_POST['valor_clase'] ?? 0), 'costo_pista' => (float) ($_POST['costo_pista'] ?? 0),
+                'valor_clase' => (float) ($_POST['valor_clase'] ?? 0), 'costo_pista' => (float) ($_POST['costo_pista'] ?? 0), 'participantes_externos' => $participantesExternosRaw === false ? -1 : $participantesExternosRaw,
                 'estado' => $_POST['estado'] ?? 'programada', 'notas' => trim($_POST['notas'] ?? ''),
             ];
             $ids = (array) ($_POST['deportistas'] ?? []);
@@ -785,6 +786,7 @@ if ($page === 'clases') {
             if ($form['fecha'] === '') $errors[] = 'La fecha es obligatoria.';
             $form['valor_clase'] = 10000.00;
             if ($form['costo_pista'] < 0) $errors[] = 'El costo de pista no puede ser negativo.';
+            if ($form['participantes_externos'] < 0) $errors[] = 'Los participantes externos no pueden ser negativos.';
             if (count(array_filter(array_map('intval', $ids))) === 0) $errors[] = 'Selecciona al menos una deportista.';
             if (empty($errors)) {
                 try {

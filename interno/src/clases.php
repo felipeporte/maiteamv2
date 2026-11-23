@@ -62,9 +62,14 @@ function clases_extras_abiertas_all(): array
     return $stmt->fetchAll();
 }
 
-function clase_extra_cerrar(int $id, float $costoPista): void
+function clase_extra_cerrar(int $id, float $costoPista, int $participantesExternos = 0): void
 {
-    if ($id <= 0 || $costoPista < 0) throw new InvalidArgumentException('El valor de cancha no es válido.');
+    clase_extra_actualizar_reparto($id, $costoPista, $participantesExternos, true);
+}
+
+function clase_extra_actualizar_reparto(int $id, float $costoPista, int $participantesExternos, bool $cerrar = false): void
+{
+    if ($id <= 0 || $costoPista < 0 || $participantesExternos < 0) throw new InvalidArgumentException('El valor de cancha o el conteo de participantes externos no es válido.');
     $pdo = db();
     $pdo->beginTransaction();
     try {
@@ -76,15 +81,16 @@ function clase_extra_cerrar(int $id, float $costoPista): void
         $stmt = $pdo->prepare('SELECT id FROM clases WHERE clase_extra_id = :id ORDER BY id ASC FOR UPDATE');
         $stmt->execute(['id' => $id]); $clases = $stmt->fetchAll(PDO::FETCH_COLUMN);
         if (!$clases) throw new InvalidArgumentException('La sesión no tiene deportistas seleccionadas.');
-        $base = round($costoPista / count($clases), 2); $asignado = 0.0;
-        $update = $pdo->prepare('UPDATE clases SET prorrateo_pista = :pista, tarifa = :tarifa, estado = "realizada" WHERE id = :id');
+        $totalParticipantes = count($clases) + $participantesExternos;
+        $base = round($costoPista / $totalParticipantes, 2); $asignado = 0.0;
+        $update = $pdo->prepare('UPDATE clases SET prorrateo_pista = :pista, tarifa = :tarifa, estado = IF(:cerrar = 1, "realizada", estado) WHERE id = :id');
         foreach ($clases as $index => $claseId) {
-            $pista = $index === count($clases) - 1 ? round($costoPista - $asignado, 2) : $base;
+            $pista = $participantesExternos === 0 && $index === count($clases) - 1 ? round($costoPista - $asignado, 2) : $base;
             $asignado += $pista;
-            $update->execute(['id' => $claseId, 'pista' => $pista, 'tarifa' => (float) $extra['valor_clase'] + $pista]);
+            $update->execute(['id' => $claseId, 'pista' => $pista, 'tarifa' => (float) $extra['valor_clase'] + $pista, 'cerrar' => $cerrar ? 1 : 0]);
         }
-        $updateExtra = $pdo->prepare('UPDATE clases_extras SET costo_pista = :pista, estado = "realizada" WHERE id = :id');
-        $updateExtra->execute(['id' => $id, 'pista' => $costoPista]);
+        $updateExtra = $pdo->prepare('UPDATE clases_extras SET costo_pista = :pista, participantes_externos = :externos, estado = IF(:cerrar = 1, "realizada", estado) WHERE id = :id');
+        $updateExtra->execute(['id' => $id, 'pista' => $costoPista, 'externos' => $participantesExternos, 'cerrar' => $cerrar ? 1 : 0]);
         $pdo->commit();
     } catch (Throwable $e) { $pdo->rollBack(); throw $e; }
 }
@@ -107,21 +113,23 @@ function clases_extras_create(array $data, array $deportistaIds): int
     $pdo->beginTransaction();
     try {
         $data['valor_clase'] = 10000.00;
-        $stmt = $pdo->prepare('INSERT INTO clases_extras (competencia_id, evento_federado_id, coach_id, fecha, duracion_min, valor_clase, costo_pista, estado, notas) VALUES (:competencia_id, :evento_federado_id, :coach_id, :fecha, :duracion_min, :valor_clase, :costo_pista, :estado, :notas)');
+        $participantesExternos = max(0, (int) ($data['participantes_externos'] ?? 0));
+        $stmt = $pdo->prepare('INSERT INTO clases_extras (competencia_id, evento_federado_id, coach_id, fecha, duracion_min, valor_clase, costo_pista, participantes_externos, estado, notas) VALUES (:competencia_id, :evento_federado_id, :coach_id, :fecha, :duracion_min, :valor_clase, :costo_pista, :externos, :estado, :notas)');
         $stmt->execute([
             'competencia_id' => (int) ($data['competencia_id'] ?? 0) ?: null,
             'evento_federado_id' => (int) ($data['evento_federado_id'] ?? 0) ?: null,
             'coach_id' => $data['coach_id'], 'fecha' => $data['fecha'],
             'duracion_min' => $data['duracion_min'] ?: null, 'valor_clase' => $data['valor_clase'],
-            'costo_pista' => $data['costo_pista'], 'estado' => $data['estado'], 'notas' => $data['notas'] ?: null,
+            'costo_pista' => $data['costo_pista'], 'externos' => $participantesExternos, 'estado' => $data['estado'], 'notas' => $data['notas'] ?: null,
         ]);
         $extraId = (int) $pdo->lastInsertId();
         $pistaTotal = round((float) $data['costo_pista'], 2);
-        $pistaBase = round($pistaTotal / count($deportistaIds), 2);
+        $totalParticipantes = count($deportistaIds) + $participantesExternos;
+        $pistaBase = round($pistaTotal / $totalParticipantes, 2);
         $pistaAsignada = 0.0;
         $stmt = $pdo->prepare('INSERT INTO clases (deportista_id, coach_id, fecha, duracion_min, tarifa, estado, notas, clase_extra_id, valor_clase, prorrateo_pista) VALUES (:deportista_id, :coach_id, :fecha, :duracion_min, :tarifa, :estado, :notas, :extra_id, :valor_clase, :prorrateo_pista)');
         foreach ($deportistaIds as $index => $deportistaId) {
-            $prorrateoPista = $index === count($deportistaIds) - 1
+            $prorrateoPista = $participantesExternos === 0 && $index === count($deportistaIds) - 1
                 ? round($pistaTotal - $pistaAsignada, 2)
                 : $pistaBase;
             $pistaAsignada += $prorrateoPista;
